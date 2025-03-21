@@ -35,7 +35,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # Настройка шаблонов Jinja2
-templates = Jinja2Templates(directory="admin/templates")
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Настройка OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
