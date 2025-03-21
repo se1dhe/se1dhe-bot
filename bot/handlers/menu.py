@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from aiogram import Dispatcher, types
-from aiogram.filters import Text
+from aiogram.utils.formatting import Text
+
 from bot.keyboards.main_menu import get_main_menu_keyboard, get_inline_main_menu
 from config.settings import DEFAULT_LANGUAGE
 import logging
@@ -180,29 +181,38 @@ def register_menu_handlers(dp: Dispatcher):
     """
     # Регистрация обработчиков текстовых кнопок
     for lang in ['ru', 'uk', 'en']:
+        catalog_text = menu_texts['catalog'][lang]
         dp.message.register(
             process_catalog_command,
-            Text(text=menu_texts['catalog'][lang], ignore_case=True)
+            lambda message, text=catalog_text: message.text == text
         )
+
+        cart_text = menu_texts['cart'][lang]
         dp.message.register(
             process_cart_command,
-            Text(text=menu_texts['cart'][lang], ignore_case=True)
+            lambda message, text=cart_text: message.text == text
         )
+
+        my_bots_text = menu_texts['my_bots'][lang]
         dp.message.register(
             process_my_bots_command,
-            Text(text=menu_texts['my_bots'][lang], ignore_case=True)
+            lambda message, text=my_bots_text: message.text == text
         )
+
+        support_text = menu_texts['support'][lang]
         dp.message.register(
             process_support_command,
-            Text(text=menu_texts['support'][lang], ignore_case=True)
+            lambda message, text=support_text: message.text == text
         )
+
+        settings_text = menu_texts['settings'][lang]
         dp.message.register(
             process_settings_command,
-            Text(text=menu_texts['settings'][lang], ignore_case=True)
+            lambda message, text=settings_text: message.text == text
         )
 
     # Регистрация обработчиков inline-кнопок
     dp.callback_query.register(
         process_menu_callback,
-        Text(startswith="menu:")
+        lambda query: query.data.startswith("menu:")
     )

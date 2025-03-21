@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 from aiogram import Dispatcher
+
+from bot.handlers.payments import register_payment_handlers
 from bot.handlers.start import register_start_handlers
 from bot.handlers.help import register_help_handlers
 from bot.handlers.menu import register_menu_handlers
 from bot.handlers.catalog import register_catalog_handlers
 from bot.handlers.cart import register_cart_handlers
-
+from bot.handlers.settings import register_settings_handlers
+from bot.handlers.support import register_support_handlers
+from bot.handlers.reviews import register_reviews_handlers
 
 
 def register_all_handlers(dp: Dispatcher):

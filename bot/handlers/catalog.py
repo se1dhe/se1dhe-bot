@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from aiogram import Dispatcher, types
-from aiogram.filters import Command, Text
+from aiogram.filters import Command
+from aiogram.utils.formatting import Text
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.orm import Session
 from models.models import Bot, BotCategory
@@ -332,5 +334,7 @@ def register_catalog_handlers(dp: Dispatcher):
     dp.message.register(cmd_catalog, Command("catalog"))
 
     # Обработчики колбэков
-    dp.callback_query.register(process_category_selection, Text(startswith="category:"))
-    dp.callback_query.register(process_bot_selection, Text(startswith="bot:"))
+    dp.callback_query.register(process_category_selection,
+                               lambda query: query.data.startswith("category:"))
+    dp.callback_query.register(process_bot_selection,
+                               lambda query: query.data.startswith("bot:"))

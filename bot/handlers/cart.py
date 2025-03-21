@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 from aiogram import Dispatcher, types
-from aiogram.filters import Command, Text
+from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.formatting import Text
 from sqlalchemy.orm import Session
 from models.models import Bot, Cart, CartItem, User
 from database.db import Session as DbSession
 from config.settings import DEFAULT_LANGUAGE
 from typing import Dict, List, Optional
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -567,4 +569,5 @@ def register_cart_handlers(dp: Dispatcher):
     dp.message.register(cmd_cart, Command("cart"))
 
     # Обработчики колбэков
-    dp.callback_query.register(process_cart_callback, Text(startswith="cart:"))
+    dp.callback_query.register(process_cart_callback,
+                               lambda query: query.data.startswith("cart:"))
