@@ -1,1 +1,71 @@
-{}
+{
+  "welcome": "Welcome to SE1DHE Bot! 🤖",
+  "welcome_new": "Welcome to SE1DHE Bot! 🤖\n\nI'll help you choose and purchase a suitable bot for your tasks. Select an action from the menu below:",
+  "welcome_back": "Welcome back! 🤖\n\nGlad to see you again. Select an action from the menu below:",
+
+  "catalog_title": "🛒 Bot Catalog",
+  "catalog_description": "Choose a category or a specific bot:",
+  "catalog_empty": "Unfortunately, the catalog is currently empty. Try checking back later!",
+
+  "cart_title": "🛍 Cart",
+  "cart_description": "Your selected bots:",
+  "cart_empty": "Your cart is empty. Go to the catalog to choose a bot.",
+  "cart_total": "Total: {total} RUB",
+  "cart_checkout": "Checkout",
+  "cart_clear": "Clear Cart",
+
+  "bot_added_to_cart": "Bot \"{name}\" has been added to your cart!",
+  "bot_removed_from_cart": "Bot \"{name}\" has been removed from your cart.",
+
+  "my_bots_title": "🤖 My Bots",
+  "my_bots_description": "List of bots you have purchased:",
+  "my_bots_empty": "You don't have any purchased bots yet. Go to the catalog to choose your first bot!",
+
+  "support_title": "🆘 Support",
+  "support_description": "Ask your question or describe the problem:",
+  "support_sent": "Your message has been sent to support. We will contact you soon.",
+
+  "settings_title": "⚙️ Settings",
+  "settings_description": "You can change language or other settings:",
+  "settings_language": "Select Language",
+  "settings_language_set": "Language set: English",
+
+  "bot_info": "📌 <b>{name}</b>\n\n{description}\n\n💰 Price: {price} RUB\n{discount_text}",
+  "bot_discount": "🔥 Discount: {discount}%",
+  "bot_add_to_cart": "Add to Cart",
+  "bot_buy_now": "Buy Now",
+
+  "checkout_title": "🛒 Checkout",
+  "checkout_description": "Choose a payment method:",
+  "checkout_freekassa": "FreeKassa",
+  "checkout_paykassa": "PayKassa",
+
+  "payment_processing": "⏳ Processing your payment...",
+  "payment_success": "✅ Payment successful!\nYou can download the bot and read the setup instructions.",
+  "payment_failed": "❌ Payment error. Please try again or choose another payment method.",
+
+  "download_bot": "📥 Download Bot",
+  "read_manual": "📖 Read Manual",
+  "join_support_group": "👥 Join Support Group",
+
+  "bug_report_title": "🐞 Send Bug Report",
+  "bug_report_description": "Describe the problem you encountered:",
+  "bug_report_send": "Send Bug Report",
+  "bug_report_sent": "✅ Your bug report has been successfully sent! Thank you for helping us improve our service.",
+
+  "review_title": "⭐ Leave a Review",
+  "review_description": "Rate the bot and write your review:",
+  "review_placeholder": "Your review...",
+  "review_sent": "✅ Thank you for your review!",
+
+  "cancel": "Cancel",
+  "back": "Back",
+  "next": "Next",
+  "save": "Save",
+  "yes": "Yes",
+  "no": "No",
+
+  "error_general": "An error occurred. Please try again later or contact support.",
+  "error_payment": "Error creating payment. Please try another payment method or contact support.",
+  "error_download": "Error downloading the file. Please try again later or contact support."
+}

@@ -11,6 +11,7 @@ from typing import Optional
 import hmac
 import hashlib
 import time
+import logging
 
 from admin.midddleware.auth_middleware import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
 from database.db import Session
@@ -24,6 +25,7 @@ router = APIRouter(
 )
 
 templates = Jinja2Templates(directory=Path("admin/templates"))
+logger = logging.getLogger(__name__)
 
 
 class Token(BaseModel):
@@ -64,13 +66,23 @@ async def telegram_login(auth_data: TelegramAuth):
 
     # Проверяем данные авторизации
     if not check_telegram_authorization(auth_dict):
+        logger.warning(f"Invalid authentication data for user {auth_data.id}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication data"
         )
 
+    # Проверяем время аутентификации (не более 24 часов)
+    if time.time() - auth_data.auth_date > 86400:
+        logger.warning(f"Authentication data expired for user {auth_data.id}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication data expired"
+        )
+
     # Проверяем, является ли пользователь администратором
     if auth_data.id not in ADMIN_IDS:
+        logger.warning(f"Unauthorized access attempt from user {auth_data.id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access admin panel"
@@ -81,6 +93,7 @@ async def telegram_login(auth_data: TelegramAuth):
     try:
         user = db.query(User).filter(User.telegram_id == auth_data.id).first()
         if not user:
+            logger.info(f"Creating new user for telegram_id {auth_data.id}")
             user = User(
                 telegram_id=auth_data.id,
                 username=auth_data.username,
@@ -89,6 +102,13 @@ async def telegram_login(auth_data: TelegramAuth):
             db.add(user)
             db.commit()
             db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Database error during user creation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error during authentication"
+        )
     finally:
         db.close()
 
@@ -98,6 +118,8 @@ async def telegram_login(auth_data: TelegramAuth):
         data={"sub": auth_data.username or str(auth_data.id), "telegram_id": auth_data.id},
         expires_delta=access_token_expires
     )
+
+    logger.info(f"User {auth_data.id} authenticated successfully")
 
     # Возвращаем токен
     return {"access_token": access_token, "token_type": "bearer", "user": {
@@ -122,5 +144,5 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.get("/logout")
 async def logout():
     """Выход из системы"""
-    response = RedirectResponse(url="/auth/auth")
+    response = RedirectResponse(url="/auth/login")
     return response

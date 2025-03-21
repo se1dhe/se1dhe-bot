@@ -15,3 +15,4 @@ telegraph==2.2.0
 # Для работы с Docker
 python-multipart==0.0.6
 jose~=1.0.0
+alembic

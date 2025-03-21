@@ -1,0 +1,48 @@
+# Игнорировать файлы окружения
+.env
+
+# Игнорировать кеш питона
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Игнорировать виртуальное окружение
+venv/
+.venv/
+ENV/
+
+# Игнорировать IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Игнорировать логи
+*.log
+
+# Игнорировать миграции
+alembic/versions/
+
+# Игнорировать медиа файлы
+media/
+
+# Игнорировать Docker временные файлы
+.dockerignore
+docker-compose.override.yml
