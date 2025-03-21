@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Добавление бота - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4">Добавление бота</h1>
+    <a href="/bots/page" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Информация о боте</h6>
+    </div>
+    <div class="card-body">
+        <form id="create-bot-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="name">Название бота</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category_id">Категория</label>
+                <select class="form-control" id="category_id" name="category_id">
+                    <option value="">Без категории</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Описание</label>
+                <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="price">Цена</label>
+                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="discount">Скидка (%)</label>
+                    <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" value="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="support_group_link">Ссылка на группу поддержки</label>
+                <input type="text" class="form-control" id="support_group_link" name="support_group_link">
+            </div>
+
+            <div class="form-group">
+                <label for="archive_file">Архив с ботом</label>
+                <input type="file" class="form-control-file" id="archive_file" name="archive_file">
+                <small class="form-text text-muted">Загрузите ZIP-архив с файлами бота</small>
+            </div>
+
+            <div class="form-group">
+                <label for="readme_content">README (инструкция)</label>
+                <textarea class="form-control" id="readme_content" name="readme_content" rows="10"></textarea>
+                <small class="form-text text-muted">HTML-разметка для инструкции. Будет опубликована на Telegra.ph</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Обработка отправки формы
+        $('#create-bot-form').submit(function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/bots',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(result) {
+                    alert('Бот успешно создан');
+                    window.location.href = '/bots/page';
+                },
+                error: function(error) {
+                    alert('Ошибка при создании бота: ' + error.responseJSON.detail);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mt-4 mb-4">Дашборд</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Пользователи
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="users-count">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Продажи (Всего)
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="sales-count">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Боты
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="bots-count">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-robot fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Баг-репорты
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="bugs-count">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-bug fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Последние продажи</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="latest-sales-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Пользователь</th>
+                                <th>Бот</th>
+                                <th>Сумма</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Последние баг-репорты</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="latest-bugs-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Пользователь</th>
+                                <th>Бот</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Функция для загрузки данных дашборда
+    function loadDashboardData() {
+        // Загрузка количества пользователей
+        $.get('/users/count', function(data) {
+            $('#users-count').text(data.count);
+        });
+
+        // Загрузка количества продаж
+        $.get('/payments/stats', function(data) {
+            $('#sales-count').text(data.total_sales);
+        });
+
+        // Загрузка количества ботов
+        $.get('/bots/count', function(data) {
+            $('#bots-count').text(data.count);
+        });
+
+        // Загрузка количества баг-репортов
+        $.get('/reports/count', function(data) {
+            $('#bugs-count').text(data.count);
+        });
+
+        // Загрузка последних продаж
+        $.get('/payments/latest', function(data) {
+            var tableBody = $('#latest-sales-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
+            } else {
+                data.forEach(function(sale) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${sale.id}</td>
+                            <td>${sale.user.username || sale.user.first_name}</td>
+                            <td>${sale.bot.name}</td>
+                            <td>${sale.amount}</td>
+                            <td>${new Date(sale.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+
+        // Загрузка последних баг-репортов
+        $.get('/reports/latest', function(data) {
+            var tableBody = $('#latest-bugs-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
+            } else {
+                data.forEach(function(bug) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${bug.id}</td>
+                            <td>${bug.user.username || bug.user.first_name}</td>
+                            <td>${bug.bot.name}</td>
+                            <td>${bug.status}</td>
+                            <td>${new Date(bug.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+    }
+
+    // Загрузка данных при загрузке страницы
+    $(document).ready(function() {
+        loadDashboardData();
+
+        // Обновление данных каждые 30 секунд
+        setInterval(loadDashboardData, 30000);
+    });
+</script>
+{% endblock %}

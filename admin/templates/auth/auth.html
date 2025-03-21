@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SE1DHE Bot Admin - Вход</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="login-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow login-card">
+                    <div class="card-body text-center">
+                        <h2 class="mb-4">SE1DHE Bot</h2>
+                        <p class="text-muted mb-4">Панель администратора</p>
+
+                        <div class="telegram-login-container d-flex justify-content-center">
+                            <!-- Telegram Login Widget -->
+                            <script async src="https://telegram.org/js/telegram-widget.js?22"
+                                    data-telegram-login="YOUR_BOT_USERNAME"
+                                    data-size="large"
+                                    data-auth-url="/auth/telegram-login-callback"
+                                    data-request-access="write"></script>
+                        </div>
+
+                        <div class="mt-4 text-muted small">
+                            Для входа используйте аккаунт Telegram с правами администратора
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Обработка данных авторизации от Telegram Widget
+        function onTelegramAuth(user) {
+            // Отправляем данные на сервер
+            fetch('/auth/telegram-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(user)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    // Сохраняем токен в localStorage
+                    localStorage.setItem('token', data.access_token);
+                    // Перенаправляем на дашборд
+                    window.location.href = '/dashboard';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка авторизации');
+            });
+        }
+    </script>
+</body>
+</html>

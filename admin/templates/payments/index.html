@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Заказы - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4">Заказы</h1>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Продажи (Всего)
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-sales">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Оплаченные заказы
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="paid-orders">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Ожидающие оплаты
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="pending-orders">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Отмененные заказы
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="cancelled-orders">
+                            Загрузка...
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Список заказов</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="orders-table" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Бот</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="text-center">Загрузка данных...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Загрузка статистики
+        $.get('/payments/stats', function(data) {
+            $('#total-sales').text(data.total_sales.toFixed(2) + ' руб.');
+            $('#paid-orders').text(data.paid_orders + ' из ' + data.total_orders);
+            $('#pending-orders').text(data.pending_orders);
+            $('#cancelled-orders').text(data.cancelled_orders);
+        });
+
+        // Загрузка списка заказов
+        function loadOrders() {
+            $.get('/payments', function(data) {
+                var tableBody = $('#orders-table tbody');
+                tableBody.empty();
+
+                if (data.length === 0) {
+                    tableBody.append('<tr><td colspan="7" class="text-center">Нет данных</td></tr>');
+                } else {
+                    data.forEach(function(order) {
+                        tableBody.append(`
+                            <tr>
+                                <td>${order.id}</td>
+                                <td>ID: ${order.user_id}</td>
+                                <td>ID: ${order.bot_id}</td>
+                                <td>${order.amount.toFixed(2)} руб.</td>
+                                <td>
+                                    <span class="badge badge-${getStatusColor(order.status)}">${order.status}</span>
+                                </td>
+                                <td>${new Date(order.created_at).toLocaleString()}</td>
+                                <td>
+                                    <a href="/payments/page/${order.id}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i> Детали
+                                    </a>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        }
+
+        // Функция для определения цвета статуса
+        function getStatusColor(status) {
+            switch(status) {
+                case 'paid': return 'success';
+                case 'pending': return 'warning';
+                case 'cancelled': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        // Загрузка заказов при загрузке страницы
+        loadOrders();
+    });
+</script>
+{% endblock %}

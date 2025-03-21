@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SE1DHE Bot Admin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/fontawesome.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div class="bg-light border-right" id="sidebar-wrapper">
+            <div class="sidebar-heading">SE1DHE Bot</div>
+            <div class="list-group list-group-flush">
+                <a href="/dashboard" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Дашборд
+                </a>
+                <a href="/bots" class="list-group-item list-group-item-action">
+                    <i class="fas fa-robot"></i> Боты
+                </a>
+                <a href="/users" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Пользователи
+                </a>
+                <a href="/payments" class="list-group-item list-group-item-action">
+                    <i class="fas fa-money-bill"></i> Платежи
+                </a>
+                <a href="/reports" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bug"></i> Баг-репорты
+                </a>
+                <a href="/changelogs" class="list-group-item list-group-item-action">
+                    <i class="fas fa-history"></i> Ченжлоги
+                </a>
+                <a href="/auth/logout" class="list-group-item list-group-item-action mt-auto">
+                    <i class="fas fa-sign-out-alt"></i> Выход
+                </a>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <button class="btn btn-primary" id="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ user.first_name or user.username }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="/auth/logout">Выход</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        // Переключение боковой панели
+        $("#menu-toggle").click(function(e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+        });
+
+        // Проверка токена
+        $(document).ready(function() {
+            const token = localStorage.getItem('token');
+            if (!token && window.location.pathname !== '/auth/login') {
+                window.location.href = '/auth/login';
+            }
+
+            // Добавление токена к каждому AJAX-запросу
+            $.ajaxSetup({
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Пользователь {{ user.username or user.first_name }} - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4">Пользователь: {{ user.username or user.first_name }}</h1>
+    <a href="/users/page" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о пользователе</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>ID:</strong> {{ user.id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Telegram ID:</strong> {{ user.telegram_id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Имя пользователя:</strong> {{ user.username or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Имя:</strong> {{ user.first_name or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Фамилия:</strong> {{ user.last_name or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Язык:</strong> {{ user.language }}
+                </div>
+                <div class="mb-3">
+                    <strong>Дата регистрации:</strong> {{ user.created_at }}
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Всего заказов:</strong> <span id="total-orders">Загрузка...</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Потрачено средств:</strong> <span id="total-spent">Загрузка...</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Отзывов:</strong> <span id="reviews-count">Загрузка...</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Баг-репортов:</strong> <span id="bug-reports-count">Загрузка...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Заказы</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="orders-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Бот</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Отзывы</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="reviews-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Бот</th>
+                                <th>Рейтинг</th>
+                                <th>Текст</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Баг-репорты</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="bug-reports-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Бот</th>
+                                <th>Статус</th>
+                                <th>Текст</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка данных...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const userId = {{ user.id }};
+
+        // Загрузка статистики
+        $.get(`/users/${userId}/stats`, function(data) {
+            $('#total-orders').text(data.total_orders);
+            $('#total-spent').text(data.total_spent.toFixed(2) + ' руб.');
+            $('#reviews-count').text(data.reviews_count);
+            $('#bug-reports-count').text(data.bug_reports_count);
+        });
+
+        // Загрузка заказов
+        $.get(`/users/${userId}/orders`, function(data) {
+            var tableBody = $('#orders-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
+            } else {
+                data.forEach(function(order) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${order.id}</td>
+                            <td>${order.bot_name}</td>
+                            <td>${order.amount.toFixed(2)} руб.</td>
+                            <td>${order.status}</td>
+                            <td>${new Date(order.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+
+        // Загрузка отзывов
+        $.get(`/users/${userId}/reviews`, function(data) {
+            var tableBody = $('#reviews-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
+            } else {
+                data.forEach(function(review) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${review.id}</td>
+                            <td>${review.bot_name}</td>
+                            <td>${review.rating}/5</td>
+                            <td>${review.text || '-'}</td>
+                            <td>${new Date(review.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+
+        // Загрузка баг-репортов
+        $.get(`/users/${userId}/bug_reports`, function(data) {
+            var tableBody = $('#bug-reports-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
+            } else {
+                data.forEach(function(report) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${report.id}</td>
+                            <td>${report.bot_name}</td>
+                            <td>${report.status}</td>
+                            <td>${report.text}</td>
+                            <td>${new Date(report.created_at).toLocaleString()}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

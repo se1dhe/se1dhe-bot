@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ #{{ order.id }} - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4">Заказ #{{ order.id }}</h1>
+    <a href="/payments/page" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о заказе</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>ID:</strong> {{ order.id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Сумма:</strong> {{ order.amount }} руб.
+                </div>
+                <div class="mb-3">
+                    <strong>Статус:</strong>
+                    <span class="badge badge-{{ 'success' if order.status.value == 'paid' else 'warning' if order.status.value == 'pending' else 'danger' }}">
+                        {{ order.status.value }}
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <strong>Платежная система:</strong> {{ order.payment_system or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>ID платежа:</strong> {{ order.payment_id or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Дата создания:</strong> {{ order.created_at }}
+                </div>
+                <div class="mb-3">
+                    <strong>Дата обновления:</strong> {{ order.updated_at }}
+                </div>
+
+                <div class="mt-4">
+                    <h6>Изменить статус:</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-success change-status" data-status="paid">
+                            <i class="fas fa-check"></i> Оплачен
+                        </button>
+                        <button type="button" class="btn btn-warning change-status" data-status="pending">
+                            <i class="fas fa-clock"></i> В ожидании
+                        </button>
+                        <button type="button" class="btn btn-danger change-status" data-status="cancelled">
+                            <i class="fas fa-times"></i> Отменен
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о пользователе</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>ID пользователя:</strong> {{ order.user.id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Telegram ID:</strong> {{ order.user.telegram_id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Имя пользователя:</strong> {{ order.user.username or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Имя:</strong> {{ order.user.first_name or '-' }}
+                </div>
+                <div class="mb-3">
+                    <strong>Фамилия:</strong> {{ order.user.last_name or '-' }}
+                </div>
+                <div class="mt-3">
+                    <a href="/users/page/{{ order.user.id }}" class="btn btn-info">
+                        <i class="fas fa-user"></i> Профиль пользователя
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о боте</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>ID бота:</strong> {{ order.bot.id }}
+                </div>
+                <div class="mb-3">
+                    <strong>Название:</strong> {{ order.bot.name }}
+                </div>
+                <div class="mb-3">
+                    <strong>Цена:</strong> {{ order.bot.price }} руб.
+                </div>
+                <div class="mb-3">
+                    <strong>Скидка:</strong> {{ order.bot.discount }}%
+                </div>
+                <div class="mt-3">
+                    <a href="/bots/page/{{ order.bot.id }}/edit" class="btn btn-info">
+                        <i class="fas fa-robot"></i> Страница бота
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Обработка изменения статуса заказа
+        $('.change-status').click(function() {
+            const orderId = {{ order.id }};
+            const status = $(this).data('status');
+
+            if (confirm(`Вы уверены, что хотите изменить статус заказа на "${status}"?`)) {
+                $.ajax({
+                    url: `/payments/${orderId}/status`,
+                    type: 'PUT',
+                    data: JSON.stringify({ status: status }),
+                    contentType: 'application/json',
+                    success: function(result) {
+                        alert('Статус заказа успешно изменен');
+                        location.reload();
+                    },
+                    error: function(error) {
+                        alert('Ошибка при изменении статуса заказа: ' + error.responseJSON.detail);
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}
