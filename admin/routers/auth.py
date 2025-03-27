@@ -13,7 +13,7 @@ import hashlib
 import time
 import logging
 
-from admin.midddleware.auth_middleware import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
+from admin.middleware.auth_middleware import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
 from database.db import Session
 from models.models import User
 from config.settings import ADMIN_IDS, SECRET_KEY

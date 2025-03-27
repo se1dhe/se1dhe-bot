@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pathlib import Path
 
-from admin.midddleware.auth_middleware import verify_token
+from admin.middleware.auth_middleware import verify_token
 from admin.routers import auth, bots, users, payments, reports, changelogs
 from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY
 
