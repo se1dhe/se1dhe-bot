@@ -44,3 +44,8 @@ ADMIN_API_PORT = int(os.getenv("ADMIN_API_PORT", "8000"))
 # Поддерживаемые языки
 SUPPORTED_LANGUAGES = ["ru", "uk", "en"]
 DEFAULT_LANGUAGE = "ru"
+
+# Создаем директории, если они не существуют
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(BOT_FILES_DIR, exist_ok=True)
+os.makedirs(BUG_REPORTS_DIR, exist_ok=True)
