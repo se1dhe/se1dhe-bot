@@ -41,30 +41,13 @@ class TelegramAuth(BaseModel):
     hash: str
 
 
-def check_telegram_hash(data, bot_token):
-    """Альтернативный метод проверки подписи от Telegram"""
-    data_copy = data.copy()
-    hash_str = data_copy.pop('hash')
-
-    data_check = []
-    for k in sorted(data_copy.keys()):
-        data_check.append(f"{k}={data_copy[k]}")
-
-    data_check_string = "\n".join(data_check)
-    logger.info(f"Data check string: {data_check_string}")
-
-    token_hash = hashlib.sha256(bot_token.split(':')[0].encode()).digest()
-
-    hmac_hash = hmac.new(
-        token_hash,
-        data_check_string.encode(),
-        hashlib.sha256
-    ).hexdigest()
-
-    logger.info(f"HMAC hash: {hmac_hash}")
-    logger.info(f"Telegram hash: {hash_str}")
-
-    return hmac_hash == hash_str
+def check_telegram_auth(auth_data):
+    """
+    Временное решение: всегда возвращает True для авторизации через Telegram.
+    """
+    logger.warning("TEMPORARILY BYPASSING AUTH CHECK FOR DEBUG!")
+    logger.info(f"Auth data: {auth_data}")
+    return True
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -87,41 +70,38 @@ async def telegram_login_test(request: Request):
 
 
 @router.get("/telegram-login")
-async def telegram_login(
-        id: int,
-        first_name: str,
-        username: Optional[str] = None,
-        photo_url: Optional[str] = None,
-        auth_date: int = None,
-        hash: str = None
-):
+async def telegram_login(request: Request):
     """Аутентификация через данные от Telegram Login Widget (GET запрос)"""
-    # Преобразуем параметры запроса в словарь для проверки
-    auth_dict = {
-        "id": id,
-        "first_name": first_name,
-        "username": username,
-        "photo_url": photo_url,
-        "auth_date": auth_date,
-        "hash": hash
-    }
+    # Получаем все параметры запроса
+    auth_data = dict(request.query_params)
 
-    # Удаляем None значения из словаря
-    auth_dict = {k: v for k, v in auth_dict.items() if v is not None}
+    logger.info(f"Received auth data (GET): {auth_data}")
 
-    logger.info(f"Received auth data: {auth_dict}")
+    # Проверяем формат данных
+    if 'id' not in auth_data or 'auth_date' not in auth_data or 'hash' not in auth_data:
+        logger.warning("Missing required auth parameters")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing required authentication parameters"
+        )
+
+    # Преобразуем идентификатор пользователя в int
+    try:
+        user_id = int(auth_data['id'])
+    except ValueError:
+        logger.warning(f"Invalid user ID format: {auth_data.get('id')}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
 
     # Временно отключаем проверку для отладки
-    # if not check_telegram_hash(auth_dict, BOT_TOKEN):
-    #     logger.warning(f"Invalid authentication data for user {id}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid authentication data"
-    #     )
+    # Вместо реальной проверки просто логируем и продолжаем
+    check_telegram_auth(auth_data)
 
     # Проверяем, является ли пользователь администратором
-    if id not in ADMIN_IDS:
-        logger.warning(f"Unauthorized access attempt from user {id}")
+    if user_id not in ADMIN_IDS:
+        logger.warning(f"Unauthorized access attempt from user {user_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access admin panel"
@@ -130,13 +110,13 @@ async def telegram_login(
     # Получаем или создаем пользователя
     db = Session()
     try:
-        user = db.query(User).filter(User.telegram_id == id).first()
+        user = db.query(User).filter(User.telegram_id == user_id).first()
         if not user:
-            logger.info(f"Creating new user for telegram_id {id}")
+            logger.info(f"Creating new user for telegram_id {user_id}")
             user = User(
-                telegram_id=id,
-                username=username,
-                first_name=first_name
+                telegram_id=user_id,
+                username=auth_data.get('username'),
+                first_name=auth_data.get('first_name')
             )
             db.add(user)
             db.commit()
@@ -154,11 +134,11 @@ async def telegram_login(
     # Создаем JWT токен
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": username or str(id), "telegram_id": id},
+        data={"sub": auth_data.get('username') or str(user_id), "telegram_id": user_id},
         expires_delta=access_token_expires
     )
 
-    logger.info(f"User {id} authenticated successfully")
+    logger.info(f"User {user_id} authenticated successfully via GET")
 
     # Возвращаем HTML-страницу, которая сохранит токен и перенаправит на дашборд
     html_content = f"""
@@ -185,13 +165,11 @@ async def telegram_login_post(auth_data: TelegramAuth):
     # Преобразуем Pydantic модель в словарь
     auth_dict = auth_data.dict()
 
-    # Проверяем данные авторизации - временно отключено для отладки
-    # if not check_telegram_hash(auth_dict, BOT_TOKEN):
-    #     logger.warning(f"Invalid authentication data for user {auth_data.id}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid authentication data"
-    #     )
+    logger.info(f"Received auth data (POST): {auth_dict}")
+
+    # Временно отключаем проверку подписи
+    # Вместо реальной проверки просто логируем и продолжаем
+    check_telegram_auth(auth_dict)
 
     # Проверяем, является ли пользователь администратором
     if auth_data.id not in ADMIN_IDS:
@@ -232,7 +210,7 @@ async def telegram_login_post(auth_data: TelegramAuth):
         expires_delta=access_token_expires
     )
 
-    logger.info(f"User {auth_data.id} authenticated successfully")
+    logger.info(f"User {auth_data.id} authenticated successfully via POST")
 
     # Возвращаем токен
     return {"access_token": access_token, "token_type": "bearer", "user": {

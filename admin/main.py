@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pathlib import Path
 
 from admin.middleware.auth_middleware import verify_token
-from admin.routers import auth, bots, users, payments, reports, changelogs
+from admin.routers import auth, bots, users, payments, reports, changelogs, webhooks
 from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY
 
 # Получаем абсолютный путь к директории, где находится файл скрипта
@@ -56,6 +56,8 @@ app.include_router(users.router, prefix="/users", tags=["users"], dependencies=[
 app.include_router(payments.router, prefix="/payments", tags=["payments"], dependencies=[Depends(verify_token)])
 app.include_router(reports.router, prefix="/reports", tags=["reports"], dependencies=[Depends(verify_token)])
 app.include_router(changelogs.router, prefix="/changelogs", tags=["changelogs"], dependencies=[Depends(verify_token)])
+
+app.include_router(webhooks.router)
 
 
 @app.get("/", response_class=HTMLResponse)

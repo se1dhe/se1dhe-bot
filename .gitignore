@@ -46,3 +46,8 @@ media/
 # Игнорировать Docker временные файлы
 .dockerignore
 docker-compose.override.yml
+
+# Игнорировать файлы окружения
+.env.local
+.env.development
+.env.production
