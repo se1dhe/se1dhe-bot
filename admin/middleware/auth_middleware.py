@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
 from config.settings import SECRET_KEY, ADMIN_IDS
-from database.db import Session
+from database.db import Session, get_db
 from models.models import User
 import logging
 
@@ -79,16 +79,31 @@ def verify_token(token: str = Depends(oauth2_scheme)):
             detail="You don't have permission to access this resource"
         )
 
-    # Получаем пользователя из базы данных
-    db = Session()
+    # Создаем отдельную сессию для каждого запроса
+    db = None
     try:
+        db = Session()
         user = db.query(User).filter(User.telegram_id == token_data.telegram_id).first()
         if user is None:
             raise credentials_exception
+        # Важно: создаем копию пользователя, чтобы избежать ошибок сессии
+        user_copy = User(
+            id=user.id,
+            telegram_id=user.telegram_id,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            language=user.language,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+        return user_copy
+    except Exception:
+        # При любой ошибке поднимаем credentials_exception
+        raise credentials_exception
     finally:
-        db.close()
-
-    return user
+        if db:
+            db.close()
 
 
 async def get_token_from_request(request: Request) -> Optional[str]:

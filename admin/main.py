@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from pathlib import Path
-from database.db import Session as DbSession
+from database.db import Session as DbSession, get_db, Session
 from models.models import User, Bot, BotCategory, BotMedia, BugReport, Order
 from admin.routers import messages
 import logging
@@ -178,30 +178,20 @@ async def users_page(request: Request):
 
 
 @app.get("/users/page/{user_id}", response_class=HTMLResponse)
-async def user_detail_page(user_id: int, request: Request):
+async def user_detail_page(user_id: int, request: Request, db: Session = Depends(get_db)):
     """Страница с детальной информацией о пользователе"""
-    db = DbSession()
-    try:
-        # Получаем информацию о пользователе
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            return templates.TemplateResponse(
-                "error.html",
-                {"request": request, "message": "User not found", "status_code": 404}
-            )
-
-        return templates.TemplateResponse(
-            "users/detail.html",
-            {"request": request, "user": user}
-        )
-    except Exception as e:
-        logger.error(f"Error loading user detail page: {e}")
+    # Получаем информацию о пользователе
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
         return templates.TemplateResponse(
             "error.html",
-            {"request": request, "message": f"Error: {str(e)}", "status_code": 500}
+            {"request": request, "message": "User not found", "status_code": 404}
         )
-    finally:
-        db.close()
+
+    return templates.TemplateResponse(
+        "users/detail.html",
+        {"request": request, "user": user}
+    )
 
 
 # Страницы платежей
@@ -331,7 +321,31 @@ async def error_page(request: Request, message: str = "Unknown error", status_co
         {"request": request, "message": message, "status_code": status_code}
     )
 
+@app.get("/messages/page/{user_id}", response_class=HTMLResponse)
+async def message_page(user_id: int, request: Request):
+    """Страница для отправки сообщений пользователю"""
+    db = DbSession()
+    try:
+        # Проверяем существование пользователя
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return templates.TemplateResponse(
+                "error.html",
+                {"request": request, "message": "Пользователь не найден", "status_code": 404}
+            )
 
+        return templates.TemplateResponse(
+            "messages/index.html",
+            {"request": request, "user": user}
+        )
+    except Exception as e:
+        logger.error(f"Error loading message page: {e}")
+        return templates.TemplateResponse(
+            "error.html",
+            {"request": request, "message": f"Error: {str(e)}", "status_code": 500}
+        )
+    finally:
+        db.close()
 
 # API маршруты с проверкой токена (добавим после HTML-маршрутов)
 api_routes = [

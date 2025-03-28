@@ -8,13 +8,14 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# Создаем движок базы данных с настройками пула соединений
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Проверка соединения перед использованием
-    pool_recycle=3600,  # Переподключение каждый час
-    pool_size=10,  # Размер пула соединений
-    max_overflow=20  # Максимальное количество дополнительных соединений
+    pool_recycle=3600,   # Переподключение каждый час
+    pool_size=10,        # Размер пула соединений
+    max_overflow=20,     # Максимальное количество дополнительных соединений
+    pool_timeout=30,     # Тайм-аут ожидания соединения
+    echo=False           # Не выводить SQL-запросы в лог
 )
 
 # Создаем фабрику сессий
@@ -27,31 +28,23 @@ Base = declarative_base()
 def get_db():
     """
     Функция-генератор для получения сессии базы данных с правильным управлением транзакциями.
-    Автоматически откатывает транзакцию в случае исключения и повторяет попытку подключения при потере соединения.
     """
-    db = Session()
+    db = None
     try:
+        db = Session()
         yield db
-    except OperationalError as e:
-        # Если соединение потеряно, пробуем восстановить
-        logger.error(f"Database connection error: {e}")
-        db.rollback()
-
-        # Пробуем переподключиться
-        try:
-            # Получаем новую сессию
-            db.close()
-            db = Session()
-            yield db
-        except Exception as reconnect_error:
-            logger.error(f"Database reconnection error: {reconnect_error}")
-            raise
     except Exception as e:
         logger.error(f"Database error: {e}")
-        db.rollback()
+        if db:
+            try:
+                db.rollback()
+            except Exception as rollback_error:
+                logger.error(f"Error during rollback: {rollback_error}")
         raise
     finally:
-        try:
-            db.close()
-        except Exception as close_error:
-            logger.error(f"Error closing database connection: {close_error}")
+        if db:
+            try:
+                db.close()
+                logger.debug("Database connection closed successfully")
+            except Exception as close_error:
+                logger.error(f"Error closing database connection: {close_error}")
