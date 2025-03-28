@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from admin.utils import serialize_model
 from models.models import User, Order, Review, BugReport
 from database.db import get_db
 from sqlalchemy import func
@@ -32,12 +34,15 @@ class UserStats(BaseModel):
     bug_reports_count: int
 
 
-# Маршруты для пользователей
 @router.get("/", response_model=List[UserResponse])
 async def get_users(db: Session = Depends(get_db)):
     """Получение списка всех пользователей"""
     users = db.query(User).all()
-    return users
+
+    # Преобразуем datetime в строки
+    serialized_users = [serialize_model(user) for user in users]
+
+    return serialized_users
 
 
 @router.get("/count")
