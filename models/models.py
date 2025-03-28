@@ -182,3 +182,23 @@ class CartItem(Base):
     # Отношения
     cart = relationship("Cart", back_populates="items")
     bot = relationship("Bot")
+
+# Добавьте в файл models/models.py после существующих классов
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message_type = Column(String(50), nullable=False)  # text, photo, video, audio, document
+    content = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=True)
+    telegram_message_id = Column(Integer, nullable=True)
+    is_from_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Отношения
+    user = relationship("User", back_populates="messages")
+
+# Добавьте новое отношение в класс User
+User.messages = relationship("Message", back_populates="user")

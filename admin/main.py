@@ -11,14 +11,17 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from pathlib import Path
 from database.db import Session as DbSession
 from models.models import User, Bot, BotCategory, BotMedia, BugReport, Order
+from admin.routers import messages
 import logging
 
 # Настроим логирование
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Добавляем импорты роутеров
+from admin.routers import auth, webhooks, bots, users, payments, reports, changelogs
 from admin.middleware.auth_middleware import verify_token, get_token_from_request
-from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY
+from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY, MESSAGES_MEDIA_DIR
 
 # Получаем абсолютный путь к директории, где находится файл скрипта
 BASE_DIR = Path(__file__).resolve().parent
@@ -49,6 +52,7 @@ app.add_middleware(
 
 # Подключение статических файлов
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+app.mount("/media/messages", StaticFiles(directory=str(MESSAGES_MEDIA_DIR)), name="messages_media")
 
 # Настройка шаблонов Jinja2
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -336,6 +340,8 @@ api_routes = [
     (payments.router, "/payments", "payments"),
     (reports.router, "/reports", "reports"),
     (changelogs.router, "/changelogs", "changelogs"),
+    (messages.router, "/messages", "messages"),
+
 ]
 
 for router, prefix, tag in api_routes:

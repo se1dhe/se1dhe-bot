@@ -33,6 +33,7 @@ PAYKASSA_SECRET_KEY = os.getenv("PAYKASSA_SECRET_KEY", "")
 MEDIA_ROOT = BASE_DIR / "media"
 BOT_FILES_DIR = MEDIA_ROOT / "bot_files"
 BUG_REPORTS_DIR = MEDIA_ROOT / "bug_reports"
+MESSAGES_MEDIA_DIR = MEDIA_ROOT / "messages"
 
 # Настройки Telegraph
 TELEGRAPH_TOKEN = os.getenv("TELEGRAPH_TOKEN", "")
@@ -49,3 +50,4 @@ DEFAULT_LANGUAGE = "ru"
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 os.makedirs(BOT_FILES_DIR, exist_ok=True)
 os.makedirs(BUG_REPORTS_DIR, exist_ok=True)
+os.makedirs(MESSAGES_MEDIA_DIR, exist_ok=True)

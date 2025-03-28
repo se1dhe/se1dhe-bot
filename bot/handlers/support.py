@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
+import os
+import uuid
+
 from aiogram import Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.formatting import Text
+from database.db import Session as DbSession
 
-from config.settings import ADMIN_IDS, DEFAULT_LANGUAGE
+
+from config.settings import ADMIN_IDS, DEFAULT_LANGUAGE, MESSAGES_MEDIA_DIR
 import logging
+
+from models.models import Message, User
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +29,7 @@ async def cmd_support(message: types.Message, state: FSMContext):
     Обработчик команды /support
     Начинает диалог с поддержкой
     """
+
     language = message.from_user.language_code or DEFAULT_LANGUAGE
 
     # Отправляем сообщение с инструкцией
@@ -174,6 +182,248 @@ def get_localized_text(key: str, lang: str) -> str:
         lang = 'ru'
 
     return texts.get(key, {}).get(lang, f"Missing text: {key}")
+
+
+async def process_user_message(message: types.Message):
+    """
+    Обработчик всех текстовых сообщений от пользователей
+    Сохраняет сообщения в базу данных для просмотра в админке
+    """
+    user_id = message.from_user.id
+    message_text = message.text
+
+    db = DbSession()
+    try:
+        # Получаем пользователя из базы данных
+        user = db.query(User).filter(User.telegram_id == user_id).first()
+
+        if not user:
+            logger.warning(f"User {user_id} not found in database")
+            return
+
+        # Сохраняем сообщение в базу данных
+        user_message = Message(
+            user_id=user.id,
+            message_type="text",
+            content=message_text,
+            telegram_message_id=message.message_id,
+            is_from_admin=False
+        )
+
+        db.add(user_message)
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing user message: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+async def process_user_photo(message: types.Message):
+    """
+    Обработчик фото от пользователей
+    Сохраняет фото в базу данных и на диск
+    """
+    user_id = message.from_user.id
+    caption = message.caption or ""
+
+    db = DbSession()
+    try:
+        # Получаем пользователя из базы данных
+        user = db.query(User).filter(User.telegram_id == user_id).first()
+
+        if not user:
+            logger.warning(f"User {user_id} not found in database")
+            return
+
+        # Получаем фото наилучшего качества
+        photo = message.photo[-1]
+
+        # Создаем директорию для хранения фотографий пользователя
+        os.makedirs(MESSAGES_MEDIA_DIR, exist_ok=True)
+
+        # Генерируем уникальное имя файла
+        filename = f"{uuid.uuid4()}.jpg"
+        file_path = os.path.join(MESSAGES_MEDIA_DIR, filename)
+
+        # Скачиваем файл
+        await photo.download(destination_file=file_path)
+
+        # Сохраняем сообщение в базу данных
+        user_message = Message(
+            user_id=user.id,
+            message_type="photo",
+            content=caption,
+            file_path=file_path,
+            telegram_message_id=message.message_id,
+            is_from_admin=False
+        )
+
+        db.add(user_message)
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing user photo: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+async def process_user_video(message: types.Message):
+    """
+    Обработчик видео от пользователей
+    Сохраняет видео в базу данных и на диск
+    """
+    user_id = message.from_user.id
+    caption = message.caption or ""
+
+    db = DbSession()
+    try:
+        # Получаем пользователя из базы данных
+        user = db.query(User).filter(User.telegram_id == user_id).first()
+
+        if not user:
+            logger.warning(f"User {user_id} not found in database")
+            return
+
+        # Получаем видео
+        video = message.video
+
+        # Создаем директорию для хранения видео пользователя
+        os.makedirs(MESSAGES_MEDIA_DIR, exist_ok=True)
+
+        # Генерируем уникальное имя файла
+        filename = f"{uuid.uuid4()}.mp4"
+        file_path = os.path.join(MESSAGES_MEDIA_DIR, filename)
+
+        # Скачиваем файл
+        await video.download(destination_file=file_path)
+
+        # Сохраняем сообщение в базу данных
+        user_message = Message(
+            user_id=user.id,
+            message_type="video",
+            content=caption,
+            file_path=file_path,
+            telegram_message_id=message.message_id,
+            is_from_admin=False
+        )
+
+        db.add(user_message)
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing user video: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+async def process_user_audio(message: types.Message):
+    """
+    Обработчик аудио от пользователей
+    Сохраняет аудио в базу данных и на диск
+    """
+    user_id = message.from_user.id
+    caption = message.caption or ""
+
+    db = DbSession()
+    try:
+        # Получаем пользователя из базы данных
+        user = db.query(User).filter(User.telegram_id == user_id).first()
+
+        if not user:
+            logger.warning(f"User {user_id} not found in database")
+            return
+
+        # Получаем аудио
+        audio = message.audio or message.voice
+
+        if not audio:
+            return
+
+        # Создаем директорию для хранения аудио пользователя
+        os.makedirs(MESSAGES_MEDIA_DIR, exist_ok=True)
+
+        # Генерируем уникальное имя файла
+        ext = "ogg" if message.voice else "mp3"
+        filename = f"{uuid.uuid4()}.{ext}"
+        file_path = os.path.join(MESSAGES_MEDIA_DIR, filename)
+
+        # Скачиваем файл
+        await audio.download(destination_file=file_path)
+
+        # Сохраняем сообщение в базу данных
+        user_message = Message(
+            user_id=user.id,
+            message_type="audio",
+            content=caption,
+            file_path=file_path,
+            telegram_message_id=message.message_id,
+            is_from_admin=False
+        )
+
+        db.add(user_message)
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing user audio: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+async def process_user_document(message: types.Message):
+    """
+    Обработчик документов от пользователей
+    Сохраняет документы в базу данных и на диск
+    """
+    user_id = message.from_user.id
+    caption = message.caption or ""
+
+    db = DbSession()
+    try:
+        # Получаем пользователя из базы данных
+        user = db.query(User).filter(User.telegram_id == user_id).first()
+
+        if not user:
+            logger.warning(f"User {user_id} not found in database")
+            return
+
+        # Получаем документ
+        document = message.document
+
+        # Создаем директорию для хранения документов пользователя
+        os.makedirs(MESSAGES_MEDIA_DIR, exist_ok=True)
+
+        # Генерируем уникальное имя файла, сохраняя оригинальное расширение
+        filename = document.file_name
+        ext = filename.split('.')[-1] if '.' in filename else 'doc'
+        safe_filename = f"{uuid.uuid4()}.{ext}"
+        file_path = os.path.join(MESSAGES_MEDIA_DIR, safe_filename)
+
+        # Скачиваем файл
+        await document.download(destination_file=file_path)
+
+        # Сохраняем сообщение в базу данных
+        user_message = Message(
+            user_id=user.id,
+            message_type="document",
+            content=caption,
+            file_path=file_path,
+            telegram_message_id=message.message_id,
+            is_from_admin=False
+        )
+
+        db.add(user_message)
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing user document: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def register_support_handlers(dp: Dispatcher):

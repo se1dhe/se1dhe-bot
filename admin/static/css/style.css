@@ -567,3 +567,80 @@ body.dark-mode .carousel-item .bg-light {
 .action-button:hover {
     transform: scale(1.05);
 }
+
+/* Стили для чата и сообщений */
+.message-container {
+    max-height: 500px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.message-admin {
+    background-color: #e3f2fd;
+    margin-left: 20%;
+}
+
+body.dark-mode .message-admin {
+    background-color: #1a3654;
+}
+
+.message-user {
+    background-color: #f5f5f5;
+    margin-right: 20%;
+}
+
+body.dark-mode .message-user {
+    background-color: #2c3e50;
+}
+
+.message-time {
+    font-size: 0.8em;
+    color: #999;
+    text-align: right;
+}
+
+body.dark-mode .message-time {
+    color: #aaa;
+}
+
+.message-content {
+    margin-bottom: 5px;
+}
+
+.message-media {
+    max-width: 300px;
+    max-height: 200px;
+    margin-top: 5px;
+}
+
+.message-tabs .nav-link.active {
+    font-weight: bold;
+    border-bottom: 2px solid #4e73df;
+}
+
+.preview-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+body.dark-mode .preview-container {
+    border-color: #384152;
+    background-color: #1e2635;
+}
+
+.file-preview {
+    max-width: 200px;
+    max-height: 150px;
+    margin: 10px 0;
+}

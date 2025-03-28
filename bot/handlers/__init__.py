@@ -33,3 +33,13 @@ def register_all_handlers(dp: Dispatcher):
 
     for handler in handlers:
         handler(dp)
+
+    # Регистрируем обработчики сообщений
+    from bot.handlers.support import process_user_message, process_user_photo, process_user_video, process_user_audio, \
+        process_user_document
+
+    dp.message.register(process_user_photo, lambda message: message.photo)
+    dp.message.register(process_user_video, lambda message: message.video)
+    dp.message.register(process_user_audio, lambda message: message.audio or message.voice)
+    dp.message.register(process_user_document, lambda message: message.document)
+    dp.message.register(process_user_message, lambda message: message.text and not message.text.startswith('/'))

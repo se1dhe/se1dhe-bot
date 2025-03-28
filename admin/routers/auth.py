@@ -1,4 +1,28 @@
+# admin/routers/auth.py
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from datetime import datetime, timedelta
+from pathlib import Path
+from pydantic import BaseModel
+from typing import Optional
+import logging
+import time
 
+from admin.middleware.auth_middleware import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from database.db import Session
+from models.models import User
+from config.settings import BOT_TOKEN, ADMIN_IDS
+
+
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+)
+
+templates = Jinja2Templates(directory=Path("admin/templates"))
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(

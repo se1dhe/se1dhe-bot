@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Сообщения с {{ user.username or user.first_name }} - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4">Сообщения с пользователем: {{ user.username or user.first_name }}</h1>
+    <a href="/users/page/{{ user.id }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> К профилю пользователя
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">История сообщений</h6>
+            </div>
+            <div class="card-body">
+                <div class="message-container" id="message-history">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Загрузка...</span>
+                        </div>
+                        <p>Загрузка сообщений...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <ul class="nav nav-tabs card-header-tabs message-tabs" id="message-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="text-tab" data-toggle="tab" href="#text-pane" role="tab">
+                            <i class="fas fa-comment"></i> Текст
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="photo-tab" data-toggle="tab" href="#photo-pane" role="tab">
+                            <i class="fas fa-image"></i> Фото
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="video-tab" data-toggle="tab" href="#video-pane" role="tab">
+                            <i class="fas fa-video"></i> Видео
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="audio-tab" data-toggle="tab" href="#audio-pane" role="tab">
+                            <i class="fas fa-music"></i> Аудио
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="document-tab" data-toggle="tab" href="#document-pane" role="tab">
+                            <i class="fas fa-file"></i> Документ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="message-tabs-content">
+                    <!-- Текстовое сообщение -->
+                    <div class="tab-pane fade show active" id="text-pane" role="tabpanel">
+                        <form id="text-message-form">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="form-group">
+                                <label for="message_text">Сообщение:</label>
+                                <textarea class="form-control" id="message_text" name="message_text" rows="5" required
+                                          placeholder="Введите текст сообщения..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Форматирование:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="parse_html" value="html" checked>
+                                    <label class="form-check-label" for="parse_html">HTML</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="parse_markdown" value="markdown">
+                                    <label class="form-check-label" for="parse_markdown">Markdown</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="parse_none" value="none">
+                                    <label class="form-check-label" for="parse_none">Без форматирования</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Предпросмотр:</label>
+                                <div id="text-preview" class="preview-container">
+                                    <p class="text-muted">Предпросмотр сообщения</p>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить сообщение
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Отправка фото -->
+                    <div class="tab-pane fade" id="photo-pane" role="tabpanel">
+                        <form id="photo-message-form" enctype="multipart/form-data">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="form-group">
+                                <label for="photo">Выберите изображение:</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="photo" name="photo" 
+                                           accept="image/*" required>
+                                    <label class="custom-file-label" for="photo">Выберите файл</label>
+                                </div>
+                                <div id="photo-preview-container" class="mt-2">
+                                    <img id="photo-preview" class="file-preview" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="photo_caption">Подпись (опционально):</label>
+                                <textarea class="form-control" id="photo_caption" name="caption" rows="3"
+                                          placeholder="Введите подпись к изображению..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Форматирование для подписи:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="photo_parse_html" value="html" checked>
+                                    <label class="form-check-label" for="photo_parse_html">HTML</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="photo_parse_markdown" value="markdown">
+                                    <label class="form-check-label" for="photo_parse_markdown">Markdown</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="photo_parse_none" value="none">
+                                    <label class="form-check-label" for="photo_parse_none">Без форматирования</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить изображение
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Отправка видео -->
+                    <div class="tab-pane fade" id="video-pane" role="tabpanel">
+                        <form id="video-message-form" enctype="multipart/form-data">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="form-group">
+                                <label for="video">Выберите видеофайл:</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="video" name="video" 
+                                           accept="video/*" required>
+                                    <label class="custom-file-label" for="video">Выберите файл</label>
+                                </div>
+                                <div id="video-preview-container" class="mt-2">
+                                    <video id="video-preview" class="file-preview" controls style="display: none;"></video>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="video_caption">Подпись (опционально):</label>
+                                <textarea class="form-control" id="video_caption" name="caption" rows="3"
+                                          placeholder="Введите подпись к видео..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Форматирование для подписи:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="video_parse_html" value="html" checked>
+                                    <label class="form-check-label" for="video_parse_html">HTML</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="video_parse_markdown" value="markdown">
+                                    <label class="form-check-label" for="video_parse_markdown">Markdown</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="video_parse_none" value="none">
+                                    <label class="form-check-label" for="video_parse_none">Без форматирования</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить видео
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Отправка аудио -->
+                    <div class="tab-pane fade" id="audio-pane" role="tabpanel">
+                        <form id="audio-message-form" enctype="multipart/form-data">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="form-group">
+                                <label for="audio">Выберите аудиофайл:</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="audio" name="audio" 
+                                           accept="audio/*" required>
+                                    <label class="custom-file-label" for="audio">Выберите файл</label>
+                                </div>
+                                <div id="audio-preview-container" class="mt-2">
+                                    <audio id="audio-preview" class="file-preview" controls style="display: none;"></audio>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="audio_caption">Подпись (опционально):</label>
+                                <textarea class="form-control" id="audio_caption" name="caption" rows="3"
+                                          placeholder="Введите подпись к аудио..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Форматирование для подписи:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="audio_parse_html" value="html" checked>
+                                    <label class="form-check-label" for="audio_parse_html">HTML</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="audio_parse_markdown" value="markdown">
+                                    <label class="form-check-label" for="audio_parse_markdown">Markdown</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="audio_parse_none" value="none">
+                                    <label class="form-check-label" for="audio_parse_none">Без форматирования</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить аудио
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Отправка документа -->
+                    <div class="tab-pane fade" id="document-pane" role="tabpanel">
+                        <form id="document-message-form" enctype="multipart/form-data">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <div class="form-group">
+                                <label for="document">Выберите документ:</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="document" name="document" required>
+                                    <label class="custom-file-label" for="document">Выберите файл</label>
+                                </div>
+                                <div id="document-preview-container" class="mt-2">
+                                    <p id="document-preview-name" class="mt-2" style="display: none;"></p>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="document_caption">Подпись (опционально):</label>
+                                <textarea class="form-control" id="document_caption" name="caption" rows="3"
+                                          placeholder="Введите подпись к документу..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Форматирование для подписи:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="document_parse_html" value="html" checked>
+                                    <label class="form-check-label" for="document_parse_html">HTML</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="document_parse_markdown" value="markdown">
+                                    <label class="form-check-label" for="document_parse_markdown">Markdown</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="parse_mode" id="document_parse_none" value="none">
+                                    <label class="form-check-label" for="document_parse_none">Без форматирования</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить документ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='/js/messages.js') }}"></script>
+{% endblock %}

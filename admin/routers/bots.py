@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, UploadFile, File
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, UploadFile, File, Body
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
 from pathlib import Path
 import os
 import shutil
@@ -9,12 +9,16 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from admin.utils import serialize_model
+from admin.utils import serialize_model, validate_file
 from models.models import Bot, BotCategory, BotMedia
 from database.db import get_db
 from config.settings import BOT_FILES_DIR, MEDIA_ROOT
 import telegraph
 from config.settings import TELEGRAPH_TOKEN
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

@@ -61,7 +61,8 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    # Используем serialize_model для преобразования datetime в строку
+    return serialize_model(user)
 
 
 @router.get("/{user_id}/stats", response_model=UserStats)
