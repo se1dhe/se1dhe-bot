@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pathlib import Path
+from fastapi.responses import HTMLResponse
 
 from admin.middleware.auth_middleware import verify_token
 from admin.routers import auth, bots, users, payments, reports, changelogs
@@ -19,7 +20,11 @@ BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(
     title="SE1DHE Bot Admin API",
     description="Admin panel API for managing the Telegram bot shop",
-    version="1.0.0"
+    version="1.0.0",
+    # Временно отключаем документацию
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
 )
 
 # CORS middleware
@@ -49,13 +54,13 @@ app.include_router(reports.router, prefix="/reports", tags=["reports"], dependen
 app.include_router(changelogs.router, prefix="/changelogs", tags=["changelogs"], dependencies=[Depends(verify_token)])
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Перенаправление на страницу входа"""
     return templates.TemplateResponse("auth/auth.html", {"request": request})
 
 
-@app.get("/dashboard")
+@app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, token: str = Depends(oauth2_scheme)):
     """Главная страница админ-панели"""
     user = verify_token(token)
