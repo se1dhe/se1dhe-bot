@@ -5,6 +5,92 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mt-4">Пользователи</h1>
+    <div class="input-group" style="max-width: 300px;">
+        <input type="text" class="form-control" id="search-user" placeholder="Поиск пользователя...">
+        <div class="input-group-append">
+            <button class="btn btn-primary" type="button" id="search-button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры и статистика -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+            </div>
+            <div class="card-body">
+                <form id="filter-form" class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="filter-language">Язык</label>
+                        <select class="form-control" id="filter-language">
+                            <option value="">Все языки</option>
+                            <option value="ru">Русский 🇷🇺</option>
+                            <option value="uk">Украинский 🇺🇦</option>
+                            <option value="en">Английский 🇬🇧</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="filter-status">Статус</label>
+                        <select class="form-control" id="filter-status">
+                            <option value="">Все пользователи</option>
+                            <option value="active">Активные</option>
+                            <option value="with_orders">С заказами</option>
+                            <option value="no_orders">Без заказов</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="filter-sort">Сортировка</label>
+                        <select class="form-control" id="filter-sort">
+                            <option value="newest">Сначала новые</option>
+                            <option value="oldest">Сначала старые</option>
+                            <option value="orders">По кол-ву заказов</option>
+                            <option value="name">По имени</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Применить фильтры
+                        </button>
+                        <button type="button" id="reset-filters" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo"></i> Сбросить фильтры
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика пользователей</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <h5 class="text-muted">Всего</h5>
+                        <h2 id="total-users">...</h2>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h5 class="text-muted">С заказами</h5>
+                        <h2 id="users-with-orders">...</h2>
+                    </div>
+                </div>
+
+                <h6 class="text-muted">Языки</h6>
+                <div class="progress mb-3" style="height: 24px;">
+                    <div class="progress-bar" id="lang-ru" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0% 🇷🇺</div>
+                    <div class="progress-bar bg-success" id="lang-uk" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0% 🇺🇦</div>
+                    <div class="progress-bar bg-info" id="lang-en" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0% 🇬🇧</div>
+                    <div class="progress-bar bg-secondary" id="lang-other" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0% 🌐</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card shadow mb-4">
@@ -18,10 +104,10 @@
                     <tr>
                         <th>ID</th>
                         <th>Telegram ID</th>
-                        <th>Имя пользователя</th>
-                        <th>Имя</th>
-                        <th>Язык</th>
+                        <th>Пользователь</th>
                         <th>Дата регистрации</th>
+                        <th>Язык</th>
+                        <th>Заказы</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
@@ -32,45 +118,453 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Пагинация -->
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Предыдущая</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Следующая</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Модальное окно просмотра пользователя -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" role="dialog" aria-labelledby="viewUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewUserModalLabel">Информация о пользователе</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Профиль</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>ID:</strong></td>
+                                <td id="modal-user-id"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Telegram ID:</strong></td>
+                                <td id="modal-telegram-id"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Имя пользователя:</strong></td>
+                                <td id="modal-username"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Имя:</strong></td>
+                                <td id="modal-first-name"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Фамилия:</strong></td>
+                                <td id="modal-last-name"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Язык:</strong></td>
+                                <td id="modal-language"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Дата регистрации:</strong></td>
+                                <td id="modal-created-at"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Статистика</h5>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Всего заказов:</strong></span>
+                                <span id="modal-total-orders" class="badge badge-primary badge-pill"></span>
+                            </div>
+                            <div class="progress mt-1" style="height: 10px;">
+                                <div id="modal-orders-progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Потрачено средств:</strong></span>
+                                <span id="modal-total-spent"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Отзывов:</strong></span>
+                                <span id="modal-reviews-count" class="badge badge-info badge-pill"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Баг-репортов:</strong></span>
+                                <span id="modal-bug-reports-count" class="badge badge-warning badge-pill"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5>Последние заказы</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered" id="modal-orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Бот</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="modal-user-link" href="#" class="btn btn-primary">Подробнее</a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
-        // Загрузка списка пользователей
-        function loadUsers() {
-            $.get('/users', function(data) {
-                var tableBody = $('#users-table tbody');
+    let currentPage = 1;
+    let usersPerPage = 10;
+    let totalUsers = 0;
+    let activeFilters = {};
+
+    // Загрузка статистики пользователей
+    function loadUserStats() {
+        // В реальном приложении здесь был бы запрос к API
+        // Для демонстрации используем заглушку с тестовыми данными
+        $.get('/users/count', function(data) {
+            $('#total-users').text(data.count);
+
+            // Примерная статистика для демонстрации
+            const withOrders = Math.round(data.count * 0.6);
+            $('#users-with-orders').text(withOrders);
+
+            // Распределение по языкам (заглушка)
+            const langRu = 70;
+            const langUk = 15;
+            const langEn = 10;
+            const langOther = 5;
+
+            $('#lang-ru').css('width', langRu + '%')
+                         .attr('aria-valuenow', langRu)
+                         .text(langRu + '% 🇷🇺');
+
+            $('#lang-uk').css('width', langUk + '%')
+                         .attr('aria-valuenow', langUk)
+                         .text(langUk + '% 🇺🇦');
+
+            $('#lang-en').css('width', langEn + '%')
+                         .attr('aria-valuenow', langEn)
+                         .text(langEn + '% 🇬🇧');
+
+            $('#lang-other').css('width', langOther + '%')
+                           .attr('aria-valuenow', langOther)
+                           .text(langOther + '% 🌐');
+        });
+    }
+
+    // Загрузка списка пользователей
+    function loadUsers() {
+        // Получаем параметры фильтра
+        var language = $('#filter-language').val();
+        var status = $('#filter-status').val();
+        var sort = $('#filter-sort').val();
+        var search = $('#search-user').val();
+
+        // Формируем параметры запроса
+        var params = {
+            page: currentPage,
+            limit: usersPerPage
+        };
+
+        if (language) params.language = language;
+        if (status) params.status = status;
+        if (sort) params.sort = sort;
+        if (search) params.search = search;
+
+        // Сохраняем активные фильтры
+        activeFilters = {
+            language: language,
+            status: status,
+            sort: sort,
+            search: search
+        };
+
+        // В реальном приложении здесь был бы запрос с параметрами
+        // Для демонстрации используем обычный запрос
+        $.get('/users', function(data) {
+            var tableBody = $('#users-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="7" class="text-center">Нет данных</td></tr>');
+                $('#pagination').hide();
+            } else {
+                totalUsers = data.length; // В реальности это пришло бы с сервера
+
+                data.forEach(function(user) {
+                    var username = user.username || 'Нет имени';
+                    var fullname = '';
+
+                    if (user.first_name || user.last_name) {
+                        fullname = (user.first_name || '') + ' ' + (user.last_name || '');
+                        fullname = `<br><small>${fullname.trim()}</small>`;
+                    }
+
+                    // Определяем флаг языка
+                    var langFlag = '';
+                    switch(user.language) {
+                        case 'ru': langFlag = '🇷🇺'; break;
+                        case 'uk': langFlag = '🇺🇦'; break;
+                        case 'en': langFlag = '🇬🇧'; break;
+                        default: langFlag = '🌐';
+                    }
+
+                    // Заглушка для количества заказов (в реальности запрашивалось бы с сервера)
+                    var ordersCount = '<span id="orders-count-' + user.id + '">...</span>';
+
+                    // В реальном приложении здесь был бы запрос статистики
+                    // Для демонстрации используем таймаут для имитации запроса
+                    setTimeout(function() {
+                        const orders = Math.floor(Math.random() * 10); // Случайное число для демонстрации
+                        $('#orders-count-' + user.id).text(orders);
+                    }, 500);
+
+                    tableBody.append(`
+                        <tr>
+                            <td>${user.id}</td>
+                            <td>${user.telegram_id}</td>
+                            <td>@${username}${fullname}</td>
+                            <td>${new Date(user.created_at).toLocaleString()}</td>
+                            <td>${langFlag} ${user.language}</td>
+                            <td class="text-center">${ordersCount}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-info btn-sm view-user" data-id="${user.id}" title="Просмотр">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="/users/page/${user.id}" class="btn btn-primary btn-sm" title="Детали">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    <button class="btn btn-success btn-sm send-message" data-id="${user.id}" title="Написать сообщение">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                });
+
+                // Обновляем пагинацию
+                updatePagination();
+                $('#pagination').show();
+            }
+        });
+    }
+
+    // Обновление пагинации
+    function updatePagination() {
+        var totalPages = Math.ceil(totalUsers / usersPerPage);
+        var pagination = $('#pagination');
+        pagination.empty();
+
+        // Кнопка "Предыдущая"
+        pagination.append(`
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}" ${currentPage === 1 ? 'tabindex="-1" aria-disabled="true"' : ''}>Предыдущая</a>
+            </li>
+        `);
+
+        // Номера страниц
+        for (var i = 1; i <= totalPages; i++) {
+            pagination.append(`
+                <li class="page-item ${currentPage === i ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
+        }
+
+        // Кнопка "Следующая"
+        pagination.append(`
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'tabindex="-1" aria-disabled="true"' : ''}>Следующая</a>
+            </li>
+        `);
+    }
+
+    // Загрузка информации о пользователе для модального окна
+    function loadUserDetails(userId) {
+        $.get('/users/' + userId, function(user) {
+            // Заполняем основную информацию
+            $('#modal-user-id').text(user.id);
+            $('#modal-telegram-id').text(user.telegram_id);
+            $('#modal-username').text(user.username || '-');
+            $('#modal-first-name').text(user.first_name || '-');
+            $('#modal-last-name').text(user.last_name || '-');
+
+            // Определяем флаг языка
+            var langFlag = '';
+            switch(user.language) {
+                case 'ru': langFlag = '🇷🇺 Русский'; break;
+                case 'uk': langFlag = '🇺🇦 Украинский'; break;
+                case 'en': langFlag = '🇬🇧 Английский'; break;
+                default: langFlag = '🌐 ' + user.language;
+            }
+            $('#modal-language').text(langFlag);
+
+            $('#modal-created-at').text(new Date(user.created_at).toLocaleString());
+
+            // Ссылка на подробную страницу
+            $('#modal-user-link').attr('href', '/users/page/' + user.id);
+
+            // Загружаем статистику
+            $.get('/users/' + userId + '/stats', function(stats) {
+                $('#modal-total-orders').text(stats.total_orders);
+                $('#modal-total-spent').text(stats.total_spent.toFixed(2) + ' ₽');
+                $('#modal-reviews-count').text(stats.reviews_count);
+                $('#modal-bug-reports-count').text(stats.bug_reports_count);
+
+                // Обновляем прогресс-бар заказов (максимум 10 заказов = 100%)
+                var progressPercent = Math.min(stats.total_orders * 10, 100);
+                $('#modal-orders-progress').css('width', progressPercent + '%')
+                                          .attr('aria-valuenow', progressPercent);
+            });
+
+            // Загружаем заказы
+            $.get('/users/' + userId + '/orders', function(orders) {
+                var tableBody = $('#modal-orders-table tbody');
                 tableBody.empty();
 
-                if (data.length === 0) {
-                    tableBody.append('<tr><td colspan="7" class="text-center">Нет данных</td></tr>');
+                if (orders.length === 0) {
+                    tableBody.append('<tr><td colspan="5" class="text-center">Нет заказов</td></tr>');
                 } else {
-                    data.forEach(function(user) {
+                    orders.slice(0, 5).forEach(function(order) {
+                        var statusBadge = '';
+                        switch(order.status) {
+                            case 'paid':
+                                statusBadge = '<span class="badge badge-success">Оплачен</span>';
+                                break;
+                            case 'pending':
+                                statusBadge = '<span class="badge badge-warning">В ожидании</span>';
+                                break;
+                            case 'cancelled':
+                                statusBadge = '<span class="badge badge-danger">Отменен</span>';
+                                break;
+                            default:
+                                statusBadge = '<span class="badge badge-secondary">' + order.status + '</span>';
+                        }
+
                         tableBody.append(`
                             <tr>
-                                <td>${user.id}</td>
-                                <td>${user.telegram_id}</td>
-                                <td>${user.username || '-'}</td>
-                                <td>${user.first_name || ''} ${user.last_name || ''}</td>
-                                <td>${user.language}</td>
-                                <td>${new Date(user.created_at).toLocaleString()}</td>
-                                <td>
-                                    <a href="/users/page/${user.id}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-eye"></i> Детали
+                                <td>${order.id}</td>
+                                <td>${order.bot_name}</td>
+                                <td>${order.amount.toFixed(2)} ₽</td>
+                                <td>${statusBadge}</td>
+                                <td>${new Date(order.created_at).toLocaleString()}</td>
+                            </tr>
+                        `);
+                    });
+
+                    if (orders.length > 5) {
+                        tableBody.append(`
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <a href="/users/page/${userId}" class="btn btn-sm btn-outline-primary">
+                                        Показать все заказы (${orders.length})
                                     </a>
                                 </td>
                             </tr>
                         `);
-                    });
+                    }
                 }
             });
-        }
 
-        // Загрузка пользователей при загрузке страницы
+            // Открываем модальное окно
+            $('#viewUserModal').modal('show');
+        });
+    }
+
+    $(document).ready(function() {
+        // Загружаем статистику и пользователей при загрузке страницы
+        loadUserStats();
         loadUsers();
+
+        // Обработчик формы фильтра
+        $('#filter-form').submit(function(e) {
+            e.preventDefault();
+            currentPage = 1; // Сбрасываем на первую страницу при фильтрации
+            loadUsers();
+        });
+
+        // Обработчик сброса фильтров
+        $('#reset-filters').click(function() {
+            $('#filter-language').val('');
+            $('#filter-status').val('');
+            $('#filter-sort').val('newest');
+            $('#search-user').val('');
+            currentPage = 1;
+            loadUsers();
+        });
+
+        // Обработчик поиска
+        $('#search-button').click(function() {
+            currentPage = 1;
+            loadUsers();
+        });
+
+        $('#search-user').keypress(function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                currentPage = 1;
+                loadUsers();
+            }
+        });
+
+        // Обработчик пагинации
+        $(document).on('click', '#pagination .page-link', function(e) {
+            e.preventDefault();
+            var page = $(this).data('page');
+            if (page && page !== currentPage) {
+                currentPage = page;
+                loadUsers();
+                $('html, body').animate({ scrollTop: 0 }, 'fast');
+            }
+        });
+
+        // Обработчик просмотра пользователя
+        $(document).on('click', '.view-user', function() {
+            var userId = $(this).data('id');
+            loadUserDetails(userId);
+        });
+
+        // Обработчик кнопки отправки сообщения
+        $(document).on('click', '.send-message', function() {
+            var userId = $(this).data('id');
+            alert('Функция отправки сообщения пользователю ID:' + userId + ' находится в разработке');
+        });
     });
 </script>
 {% endblock %}

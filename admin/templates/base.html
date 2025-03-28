@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SE1DHE Bot Admin{% endblock %}</title>
-    <!-- Использование CDN вместо локальных файлов -->
+    <!-- Подключение Bootstrap и Font Awesome через CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
@@ -14,28 +14,33 @@
     <div class="d-flex" id="wrapper">
         <!-- Sidebar -->
         <div class="bg-light border-right" id="sidebar-wrapper">
-            <div class="sidebar-heading">SE1DHE Bot</div>
+            <div class="sidebar-heading d-flex align-items-center">
+                <i class="fas fa-robot mr-2"></i> SE1DHE Bot
+            </div>
             <div class="list-group list-group-flush">
-                <a href="/dashboard" class="list-group-item list-group-item-action">
-                    <i class="fas fa-tachometer-alt"></i> Дашборд
+                <a href="/dashboard" class="list-group-item list-group-item-action" id="nav-dashboard">
+                    <i class="fas fa-tachometer-alt mr-2"></i> Дашборд
                 </a>
-                <a href="/bots/page" class="list-group-item list-group-item-action">
-                    <i class="fas fa-robot"></i> Боты
+                <a href="/bots/page" class="list-group-item list-group-item-action" id="nav-bots">
+                    <i class="fas fa-robot mr-2"></i> Боты
                 </a>
-                <a href="/users/page" class="list-group-item list-group-item-action">
-                    <i class="fas fa-users"></i> Пользователи
+                <a href="/bots/page/categories" class="list-group-item list-group-item-action pl-4" id="nav-categories">
+                    <i class="fas fa-folder mr-2"></i> Категории
                 </a>
-                <a href="/payments/page" class="list-group-item list-group-item-action">
-                    <i class="fas fa-money-bill"></i> Платежи
+                <a href="/users/page" class="list-group-item list-group-item-action" id="nav-users">
+                    <i class="fas fa-users mr-2"></i> Пользователи
                 </a>
-                <a href="/reports/page" class="list-group-item list-group-item-action">
-                    <i class="fas fa-bug"></i> Баг-репорты
+                <a href="/payments/page" class="list-group-item list-group-item-action" id="nav-payments">
+                    <i class="fas fa-money-bill mr-2"></i> Платежи
                 </a>
-                <a href="/changelogs/page" class="list-group-item list-group-item-action">
-                    <i class="fas fa-history"></i> Ченжлоги
+                <a href="/reports/page" class="list-group-item list-group-item-action" id="nav-reports">
+                    <i class="fas fa-bug mr-2"></i> Баг-репорты
                 </a>
-                <a href="/auth/logout" class="list-group-item list-group-item-action mt-auto">
-                    <i class="fas fa-sign-out-alt"></i> Выход
+                <a href="/changelogs/page" class="list-group-item list-group-item-action" id="nav-changelogs">
+                    <i class="fas fa-history mr-2"></i> Ченжлоги
+                </a>
+                <a href="/auth/logout" class="list-group-item list-group-item-action mt-auto text-danger">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Выход
                 </a>
             </div>
         </div>
@@ -48,72 +53,167 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
+                    <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <span id="username">Администратор</span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="/auth/logout">Выход</a>
+                                <a class="dropdown-item" href="#" id="theme-toggle">
+                                    <i class="fas fa-moon"></i> Тёмная тема
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="/auth/logout">
+                                    <i class="fas fa-sign-out-alt"></i> Выход
+                                </a>
                             </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="notifications-toggle">
+                                <i class="fas fa-bell"></i>
+                                <span class="badge bg-danger">3</span>
+                            </a>
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            <div class="container-fluid">
+            <div class="container-fluid py-4">
+                <!-- Область для уведомлений -->
+                <div id="alerts-container"></div>
+
+                <!-- Основной контент страницы -->
                 {% block content %}{% endblock %}
             </div>
+
+            <!-- Footer -->
+            <footer class="bg-light text-center text-muted py-3 border-top">
+                <div class="container">
+                    <p class="mb-0">SE1DHE Bot Admin Panel &copy; 2023-2025</p>
+                    <small>Версия 1.0.0</small>
+                </div>
+            </footer>
         </div>
     </div>
 
-    <!-- Использование CDN вместо локальных файлов -->
+    <!-- Подключение jQuery и Bootstrap через CDN -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Переключение боковой панели
-        $("#menu-toggle").click(function(e) {
+    // Переключение боковой панели
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+
+    // Проверка и настройка токена для API-запросов
+    $(document).ready(function() {
+        const token = localStorage.getItem('token');
+
+        // Получаем данные пользователя из токена (если есть)
+        if (token) {
+            try {
+                // Парсим JWT токен (часть между первой и второй точкой содержит данные)
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                const payload = JSON.parse(jsonPayload);
+                if (payload.sub) {
+                    $('#username').text(payload.sub);
+                }
+            } catch (e) {
+                console.error('Error parsing token:', e);
+            }
+        }
+
+        // Добавление токена к каждому AJAX-запросу
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                if (token) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Обработка ошибок AJAX
+                if (xhr.status === 401) {
+                    console.log('Authentication error in API request');
+                    // Показываем уведомление пользователю
+                    if (window.showAlert) {
+                        window.showAlert('Ошибка аутентификации при запросе к API. Попробуйте перезайти.', 'danger');
+                    }
+                }
+            }
+        });
+
+        // Подсветка активного пункта меню
+        var currentPath = window.location.pathname;
+
+        if (currentPath === '/dashboard') {
+            $('#nav-dashboard').addClass('active');
+        } else if (currentPath.startsWith('/bots')) {
+            if (currentPath.includes('/categories')) {
+                $('#nav-categories').addClass('active');
+            } else {
+                $('#nav-bots').addClass('active');
+            }
+        } else if (currentPath.startsWith('/users')) {
+            $('#nav-users').addClass('active');
+        } else if (currentPath.startsWith('/payments')) {
+            $('#nav-payments').addClass('active');
+        } else if (currentPath.startsWith('/reports')) {
+            $('#nav-reports').addClass('active');
+        } else if (currentPath.startsWith('/changelogs')) {
+            $('#nav-changelogs').addClass('active');
+        }
+
+        // Функция для добавления уведомлений
+        window.showAlert = function(message, type = 'success', duration = 5000) {
+            const id = 'alert-' + Date.now();
+            const html = `
+                <div id="${id}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+
+            $('#alerts-container').append(html);
+
+            if (duration > 0) {
+                setTimeout(function() {
+                    $('#' + id).fadeOut('slow', function() { $(this).remove(); });
+                }, duration);
+            }
+        };
+
+        // Обработчик переключения темы
+        $('#theme-toggle').click(function(e) {
             e.preventDefault();
-            $("#wrapper").toggleClass("toggled");
+
+            // Переключаем тему
+            $('body').toggleClass('dark-mode');
+
+            // Меняем иконку и текст
+            const isDarkMode = $('body').hasClass('dark-mode');
+            if (isDarkMode) {
+                $(this).html('<i class="fas fa-sun"></i> Светлая тема');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                $(this).html('<i class="fas fa-moon"></i> Тёмная тема');
+                localStorage.setItem('theme', 'light');
+            }
         });
 
-        // Проверка токена
-        $(document).ready(function() {
-            const token = localStorage.getItem('token');
-            if (!token && window.location.pathname !== '/' && !window.location.pathname.startsWith('/auth/')) {
-                window.location.href = '/';
-            }
-
-            // Получаем данные пользователя из токена (если есть)
-            if (token) {
-                try {
-                    // Парсим JWT токен (часть между первой и второй точкой содержит данные)
-                    const base64Url = token.split('.')[1];
-                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                    }).join(''));
-
-                    const payload = JSON.parse(jsonPayload);
-                    if (payload.sub) {
-                        $('#username').text(payload.sub);
-                    }
-                } catch (e) {
-                    console.error('Error parsing token:', e);
-                }
-            }
-
-            // Добавление токена к каждому AJAX-запросу
-            $.ajaxSetup({
-                beforeSend: function(xhr) {
-                    if (token) {
-                        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-                    }
-                }
-            });
-        });
-    </script>
+        // Проверяем сохраненную тему
+        if (localStorage.getItem('theme') === 'dark') {
+            $('body').addClass('dark-mode');
+            $('#theme-toggle').html('<i class="fas fa-sun"></i> Светлая тема');
+        }
+    });
+</script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

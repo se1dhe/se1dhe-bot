@@ -3,10 +3,11 @@
 {% block title %}Дашборд - SE1DHE Bot Admin{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mt-4 mb-4">Дашборд</h1>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mt-4 mb-4">Дашборд</h1>
+    <button id="refresh-dashboard" class="btn btn-primary">
+        <i class="fas fa-sync"></i> Обновить данные
+    </button>
 </div>
 
 <div class="row">
@@ -40,6 +41,9 @@
                         </div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800" id="sales-count">
                             Загрузка...
+                        </div>
+                        <div id="sales-info" class="text-muted">
+                            <!-- Здесь будет доп. информация -->
                         </div>
                     </div>
                     <div class="col-auto">
@@ -94,8 +98,9 @@
 <div class="row">
     <div class="col-lg-6 mb-4">
         <div class="card shadow mb-4">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">Последние продажи</h6>
+                <a href="/payments/page" class="btn btn-sm btn-outline-primary">Все продажи</a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -122,8 +127,9 @@
 
     <div class="col-lg-6 mb-4">
         <div class="card shadow mb-4">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">Последние баг-репорты</h6>
+                <a href="/reports/page" class="btn btn-sm btn-outline-primary">Все баг-репорты</a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -148,30 +154,71 @@
         </div>
     </div>
 </div>
+
+<!-- Статистика по периодам -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика продаж</h6>
+            </div>
+            <div class="card-body">
+                <div class="btn-group mb-3" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-period="week">Неделя</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="month">Месяц</button>
+                    <button type="button" class="btn btn-outline-primary" data-period="year">Год</button>
+                </div>
+                <div class="chart-container" style="position: relative; height:300px;">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
     // Функция для загрузки данных дашборда
     function loadDashboardData() {
         // Загрузка количества пользователей
         $.get('/users/count', function(data) {
             $('#users-count').text(data.count);
+        }).fail(function(error) {
+            $('#users-count').text('Ошибка');
+            console.error('Error loading users count:', error);
         });
 
-        // Загрузка количества продаж
+        // Загрузка статистики продаж
         $.get('/payments/stats', function(data) {
-            $('#sales-count').text(data.total_sales);
+            $('#sales-count').text(data.total_sales.toFixed(2) + ' руб.');
+
+            // Добавим доп. инфо
+            $('#sales-info').html(
+                `<small>Всего заказов: ${data.total_orders}<br>` +
+                `Оплачено: ${data.paid_orders}<br>` +
+                `В ожидании: ${data.pending_orders}</small>`
+            );
+        }).fail(function(error) {
+            $('#sales-count').text('Ошибка');
+            console.error('Error loading sales stats:', error);
         });
 
         // Загрузка количества ботов
         $.get('/bots/count', function(data) {
             $('#bots-count').text(data.count);
+        }).fail(function(error) {
+            $('#bots-count').text('Ошибка');
+            console.error('Error loading bots count:', error);
         });
 
         // Загрузка количества баг-репортов
         $.get('/reports/count', function(data) {
             $('#bugs-count').text(data.count);
+        }).fail(function(error) {
+            $('#bugs-count').text('Ошибка');
+            console.error('Error loading bugs count:', error);
         });
 
         // Загрузка последних продаж
@@ -186,14 +233,17 @@
                     tableBody.append(`
                         <tr>
                             <td>${sale.id}</td>
-                            <td>${sale.user.username || sale.user.first_name}</td>
+                            <td>${sale.user.username || sale.user.first_name || 'ID: ' + sale.user.id}</td>
                             <td>${sale.bot.name}</td>
-                            <td>${sale.amount}</td>
+                            <td>${sale.amount.toFixed(2)} ₽</td>
                             <td>${new Date(sale.created_at).toLocaleString()}</td>
                         </tr>
                     `);
                 });
             }
+        }).fail(function(error) {
+            $('#latest-sales-table tbody').html('<tr><td colspan="5" class="text-center text-danger">Ошибка загрузки данных</td></tr>');
+            console.error('Error loading latest sales:', error);
         });
 
         // Загрузка последних баг-репортов
@@ -205,16 +255,115 @@
                 tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
             } else {
                 data.forEach(function(bug) {
+                    // Определение класса для статуса
+                    let statusClass = 'badge badge-';
+                    switch(bug.status) {
+                        case 'new':
+                            statusClass += 'warning';
+                            bug.status = 'Новый';
+                            break;
+                        case 'in_progress':
+                            statusClass += 'info';
+                            bug.status = 'В работе';
+                            break;
+                        case 'resolved':
+                            statusClass += 'success';
+                            bug.status = 'Решен';
+                            break;
+                        default:
+                            statusClass += 'secondary';
+                    }
+
                     tableBody.append(`
                         <tr>
                             <td>${bug.id}</td>
-                            <td>${bug.user.username || bug.user.first_name}</td>
+                            <td>${bug.user.username || bug.user.first_name || 'ID: ' + bug.user.id}</td>
                             <td>${bug.bot.name}</td>
-                            <td>${bug.status}</td>
+                            <td><span class="${statusClass}">${bug.status}</span></td>
                             <td>${new Date(bug.created_at).toLocaleString()}</td>
                         </tr>
                     `);
                 });
+            }
+        }).fail(function(error) {
+            $('#latest-bugs-table tbody').html('<tr><td colspan="5" class="text-center text-danger">Ошибка загрузки данных</td></tr>');
+            console.error('Error loading latest bugs:', error);
+        });
+
+        // Загружаем данные для графика по умолчанию (неделя)
+        loadSalesChart('week');
+    }
+
+    let salesChart = null;
+
+    // Функция для загрузки данных графика продаж
+    function loadSalesChart(period) {
+        // В реальном приложении здесь был бы запрос к API
+        // Сейчас используем заглушку с тестовыми данными
+
+        let labels = [];
+        let data = [];
+
+        if (period === 'week') {
+            labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            data = [5000, 3000, 4500, 2500, 6000, 7000, 4000];
+        } else if (period === 'month') {
+            labels = ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'];
+            data = [15000, 20000, 18000, 25000];
+        } else if (period === 'year') {
+            labels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+            data = [30000, 25000, 40000, 35000, 42000, 48000, 50000, 55000, 45000, 60000, 70000, 75000];
+        }
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+
+        // Уничтожаем предыдущий график, если он существует
+        if (salesChart) {
+            salesChart.destroy();
+        }
+
+        // Создаем новый график
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Продажи (руб.)',
+                    data: data,
+                    backgroundColor: 'rgba(78, 115, 223, 0.2)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointHoverBorderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' ₽';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toLocaleString() + ' ₽';
+                            }
+                        }
+                    }
+                }
             }
         });
     }
@@ -223,8 +372,21 @@
     $(document).ready(function() {
         loadDashboardData();
 
-        // Обновление данных каждые 30 секунд
-        setInterval(loadDashboardData, 30000);
+        // Обработчик кнопки обновления
+        $('#refresh-dashboard').click(function() {
+            $(this).find('i').addClass('fa-spin');
+            loadDashboardData();
+            setTimeout(() => {
+                $(this).find('i').removeClass('fa-spin');
+            }, 1000);
+        });
+
+        // Обработчики переключения периода для графика
+        $('.btn-group [data-period]').click(function() {
+            $('.btn-group [data-period]').removeClass('active');
+            $(this).addClass('active');
+            loadSalesChart($(this).data('period'));
+        });
     });
 </script>
 {% endblock %}

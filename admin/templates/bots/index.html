@@ -5,17 +5,61 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mt-4">Боты</h1>
-    <a href="/bots/page/create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Добавить бота
-    </a>
+    <div>
+        <a href="/bots/page/categories" class="btn btn-outline-primary mr-2">
+            <i class="fas fa-folder"></i> Категории
+        </a>
+        <a href="/bots/page/create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Добавить бота
+        </a>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" class="row">
+            <div class="col-md-3 mb-3">
+                <label for="filter-category">Категория</label>
+                <select class="form-control" id="filter-category">
+                    <option value="">Все категории</option>
+                    <!-- Категории будут загружены динамически -->
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="filter-price">Цена до</label>
+                <input type="number" class="form-control" id="filter-price" placeholder="Макс. цена">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="filter-sort">Сортировка</label>
+                <select class="form-control" id="filter-sort">
+                    <option value="newest">Сначала новые</option>
+                    <option value="price_asc">Цена (по возрастанию)</option>
+                    <option value="price_desc">Цена (по убыванию)</option>
+                    <option value="name">По названию</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="filter-search">Поиск</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="filter-search" placeholder="Название бота">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">Список ботов</h6>
-        <a href="/bots/page/categories" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-folder"></i> Категории
-        </a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -23,19 +67,108 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Изображение</th>
                         <th>Название</th>
                         <th>Категория</th>
-                        <th>Цена</th>
+                        <th>Цена (руб.)</th>
                         <th>Скидка</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="6" class="text-center">Загрузка данных...</td>
+                        <td colspan="7" class="text-center">Загрузка данных...</td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Пагинация -->
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Предыдущая</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Следующая</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Модальное окно просмотра бота -->
+<div class="modal fade" id="viewBotModal" tabindex="-1" role="dialog" aria-labelledby="viewBotModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewBotModalLabel">Информация о боте</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-5">
+                        <div id="bot-images-carousel" class="carousel slide" data-ride="carousel">
+                            <div class="carousel-inner">
+                                <!-- Изображения бота будут здесь -->
+                            </div>
+                            <a class="carousel-control-prev" href="#bot-images-carousel" role="button" data-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Предыдущий</span>
+                            </a>
+                            <a class="carousel-control-next" href="#bot-images-carousel" role="button" data-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Следующий</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <h4 id="modal-bot-name"></h4>
+                        <p class="text-muted" id="modal-bot-category"></p>
+
+                        <div class="d-flex mb-3">
+                            <h5 id="modal-bot-price" class="mr-3"></h5>
+                            <span id="modal-bot-discount" class="badge badge-success align-self-center"></span>
+                        </div>
+
+                        <div id="modal-bot-description" class="mb-3"></div>
+
+                        <p><strong>Инструкция:</strong> <a id="modal-bot-readme" href="#" target="_blank">Открыть</a></p>
+                        <p><strong>Группа поддержки:</strong> <a id="modal-bot-support" href="#" target="_blank">Перейти</a></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="modal-bot-edit" href="#" class="btn btn-primary">Редактировать</a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteBotModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить бота <strong id="delete-bot-name"></strong>?</p>
+                <p class="text-danger">Это действие невозможно отменить!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete">Удалить</button>
+            </div>
         </div>
     </div>
 </div>
@@ -43,52 +176,307 @@
 
 {% block extra_js %}
 <script>
-    $(document).ready(function() {
-        // Загрузка списка ботов
-        function loadBots() {
-            $.get('/bots', function(data) {
-                var tableBody = $('#bots-table tbody');
-                tableBody.empty();
+    let currentPage = 1;
+    let botsPerPage = 10;
+    let totalBots = 0;
+    let categories = [];
+    let deleteId = null;
 
-                if (data.length === 0) {
-                    tableBody.append('<tr><td colspan="6" class="text-center">Нет данных</td></tr>');
-                } else {
-                    data.forEach(function(bot) {
-                        tableBody.append(`
-                            <tr>
-                                <td>${bot.id}</td>
-                                <td>${bot.name}</td>
-                                <td>${bot.category_id ? 'Категория #' + bot.category_id : 'Без категории'}</td>
-                                <td>${bot.price}</td>
-                                <td>${bot.discount}%</td>
-                                <td>
-                                    <a href="/bots/page/${bot.id}/edit" class="btn btn-info btn-sm">
+    // Загрузка категорий для фильтра
+    function loadCategories() {
+        $.get('/bots/categories', function(data) {
+            categories = data;
+            var categorySelect = $('#filter-category');
+            categorySelect.empty();
+            categorySelect.append('<option value="">Все категории</option>');
+
+            data.forEach(function(category) {
+                categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
+            });
+        });
+    }
+
+    // Загрузка списка ботов
+    function loadBots() {
+        // Получаем параметры фильтра
+        var categoryId = $('#filter-category').val();
+        var maxPrice = $('#filter-price').val();
+        var sort = $('#filter-sort').val();
+        var search = $('#filter-search').val();
+
+        // Формируем параметры запроса
+        var params = {
+            page: currentPage,
+            limit: botsPerPage
+        };
+
+        if (categoryId) params.category_id = categoryId;
+        if (maxPrice) params.max_price = maxPrice;
+        if (sort) params.sort = sort;
+        if (search) params.search = search;
+
+        // В реальном приложении здесь был бы запрос с параметрами
+        // Для демонстрации используем обычный запрос
+        $.get('/bots', function(data) {
+            var tableBody = $('#bots-table tbody');
+            tableBody.empty();
+
+            if (data.length === 0) {
+                tableBody.append('<tr><td colspan="7" class="text-center">Нет данных</td></tr>');
+                $('#pagination').hide();
+            } else {
+                totalBots = data.length; // В реальности это пришло бы с сервера
+
+                data.forEach(function(bot) {
+                    // Получение первого изображения бота (если есть)
+                    var imgHtml = '<div class="text-center">Нет фото</div>';
+
+                    // Вычисляем фактическую цену с учетом скидки
+                    var finalPrice = bot.price;
+                    if (bot.discount > 0) {
+                        finalPrice = bot.price * (1 - bot.discount / 100);
+                    }
+
+                    // Получаем название категории (если есть)
+                    var categoryName = bot.category_id ? 'Загрузка...' : 'Без категории';
+
+                    if (bot.category_id) {
+                        // Находим категорию в уже загруженном списке
+                        var category = categories.find(c => c.id === bot.category_id);
+                        if (category) {
+                            categoryName = category.name;
+                        } else {
+                            // Если категория не найдена в кеше, запрашиваем ее
+                            $.get('/bots/categories/' + bot.category_id, function(category) {
+                                $('#category-name-' + bot.id).text(category.name);
+                            });
+                        }
+                    }
+
+                    tableBody.append(`
+                        <tr>
+                            <td>${bot.id}</td>
+                            <td class="bot-image" data-id="${bot.id}">${imgHtml}</td>
+                            <td>${bot.name}</td>
+                            <td id="category-name-${bot.id}">${categoryName}</td>
+                            <td>${finalPrice.toFixed(2)}</td>
+                            <td>${bot.discount > 0 ? bot.discount + '%' : '-'}</td>
+                            <td class="text-center">
+                                <div class="btn-group">
+                                    <button class="btn btn-info btn-sm view-bot" data-id="${bot.id}" title="Просмотр">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="/bots/page/${bot.id}/edit" class="btn btn-primary btn-sm" title="Редактировать">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button class="btn btn-danger btn-sm delete-bot" data-id="${bot.id}">
+                                    <button class="btn btn-danger btn-sm delete-bot" data-id="${bot.id}" data-name="${bot.name}" title="Удалить">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                </td>
-                            </tr>
-                        `);
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+
+                    // Загружаем изображение бота (если есть)
+                    $.get('/bots/' + bot.id + '/media', function(media) {
+                        if (media.length > 0) {
+                            // Найдем первое фото
+                            var photo = media.find(item => item.file_type === 'photo');
+                            if (photo) {
+                                $(`.bot-image[data-id="${bot.id}"]`).html(
+                                    `<img src="${photo.url}" alt="${bot.name}" class="img-thumbnail" style="max-height: 50px;">`
+                                );
+                            }
+                        }
                     });
-                }
-            });
+                });
+
+                // Обновляем пагинацию
+                updatePagination();
+                $('#pagination').show();
+            }
+        });
+    }
+
+    // Обновление пагинации
+    function updatePagination() {
+        var totalPages = Math.ceil(totalBots / botsPerPage);
+        var pagination = $('#pagination');
+        pagination.empty();
+
+        // Кнопка "Предыдущая"
+        pagination.append(`
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}" ${currentPage === 1 ? 'tabindex="-1" aria-disabled="true"' : ''}>Предыдущая</a>
+            </li>
+        `);
+
+        // Номера страниц
+        for (var i = 1; i <= totalPages; i++) {
+            pagination.append(`
+                <li class="page-item ${currentPage === i ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
         }
 
-        // Загрузка ботов при загрузке страницы
+        // Кнопка "Следующая"
+        pagination.append(`
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'tabindex="-1" aria-disabled="true"' : ''}>Следующая</a>
+            </li>
+        `);
+    }
+
+    // Загрузка информации о боте для модального окна
+    function loadBotDetails(botId) {
+        $.get('/bots/' + botId, function(bot) {
+            // Заполняем информацию о боте
+            $('#modal-bot-name').text(bot.name);
+
+            // Получаем название категории
+            if (bot.category_id) {
+                var category = categories.find(c => c.id === bot.category_id);
+                if (category) {
+                    $('#modal-bot-category').text('Категория: ' + category.name);
+                } else {
+                    $.get('/bots/categories/' + bot.category_id, function(category) {
+                        $('#modal-bot-category').text('Категория: ' + category.name);
+                    });
+                }
+            } else {
+                $('#modal-bot-category').text('Без категории');
+            }
+
+            // Заполняем цену и скидку
+            var finalPrice = bot.price;
+            if (bot.discount > 0) {
+                finalPrice = bot.price * (1 - bot.discount / 100);
+                $('#modal-bot-price').html(`${finalPrice.toFixed(2)} ₽ <s class="text-muted">${bot.price.toFixed(2)} ₽</s>`);
+                $('#modal-bot-discount').text(`Скидка ${bot.discount}%`).show();
+            } else {
+                $('#modal-bot-price').text(`${bot.price.toFixed(2)} ₽`);
+                $('#modal-bot-discount').hide();
+            }
+
+            // Заполняем описание
+            $('#modal-bot-description').html(bot.description);
+
+            // Ссылки
+            if (bot.readme_url) {
+                $('#modal-bot-readme').attr('href', bot.readme_url).show();
+            } else {
+                $('#modal-bot-readme').parent().hide();
+            }
+
+            if (bot.support_group_link) {
+                $('#modal-bot-support').attr('href', bot.support_group_link).show();
+            } else {
+                $('#modal-bot-support').parent().hide();
+            }
+
+            // Ссылка на редактирование
+            $('#modal-bot-edit').attr('href', '/bots/page/' + bot.id + '/edit');
+
+            // Загружаем изображения
+            $.get('/bots/' + bot.id + '/media', function(media) {
+                var carousel = $('#bot-images-carousel .carousel-inner');
+                carousel.empty();
+
+                if (media.length > 0) {
+                    // Фильтруем только фото
+                    var photos = media.filter(item => item.file_type === 'photo');
+
+                    if (photos.length > 0) {
+                        photos.forEach(function(photo, index) {
+                            carousel.append(`
+                                <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                                    <img src="${photo.url}" class="d-block w-100" alt="Изображение ${index + 1}">
+                                </div>
+                            `);
+                        });
+                    } else {
+                        carousel.append(`
+                            <div class="carousel-item active">
+                                <div class="d-flex justify-content-center align-items-center bg-light" style="height: 300px;">
+                                    <p class="text-muted">Нет изображений</p>
+                                </div>
+                            </div>
+                        `);
+                    }
+                } else {
+                    carousel.append(`
+                        <div class="carousel-item active">
+                            <div class="d-flex justify-content-center align-items-center bg-light" style="height: 300px;">
+                                <p class="text-muted">Нет изображений</p>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+
+            // Открываем модальное окно
+            $('#viewBotModal').modal('show');
+        });
+    }
+
+    $(document).ready(function() {
+        // Загружаем категории и боты при загрузке страницы
+        loadCategories();
         loadBots();
 
-        // Обработка удаления бота
-        $(document).on('click', '.delete-bot', function() {
-            var botId = $(this).data('id');
+        // Обработчик формы фильтра
+        $('#filter-form').submit(function(e) {
+            e.preventDefault();
+            currentPage = 1; // Сбрасываем на первую страницу при фильтрации
+            loadBots();
+        });
 
-            if (confirm('Вы уверены, что хотите удалить этого бота?')) {
+        // Обработчик изменения фильтра категории
+        $('#filter-category').change(function() {
+            currentPage = 1;
+            loadBots();
+        });
+
+        // Обработчик изменения сортировки
+        $('#filter-sort').change(function() {
+            loadBots();
+        });
+
+        // Обработчик пагинации
+        $(document).on('click', '#pagination .page-link', function(e) {
+            e.preventDefault();
+            var page = $(this).data('page');
+            if (page && page !== currentPage) {
+                currentPage = page;
+                loadBots();
+                $('html, body').animate({ scrollTop: 0 }, 'fast');
+            }
+        });
+
+        // Обработчик просмотра бота
+        $(document).on('click', '.view-bot', function() {
+            var botId = $(this).data('id');
+            loadBotDetails(botId);
+        });
+
+        // Обработчик подготовки к удалению
+        $(document).on('click', '.delete-bot', function() {
+            deleteId = $(this).data('id');
+            var botName = $(this).data('name');
+            $('#delete-bot-name').text(botName);
+            $('#deleteBotModal').modal('show');
+        });
+
+        // Обработчик подтверждения удаления
+        $('#confirm-delete').click(function() {
+            if (deleteId) {
                 $.ajax({
-                    url: '/bots/' + botId,
+                    url: '/bots/' + deleteId,
                     type: 'DELETE',
                     success: function(result) {
-                        alert('Бот успешно удален');
+                        $('#deleteBotModal').modal('hide');
+                        alert('Бот успешно удален!');
                         loadBots();
                     },
                     error: function(error) {

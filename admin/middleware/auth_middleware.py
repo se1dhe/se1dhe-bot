@@ -18,6 +18,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 часа
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
+# Эти пути не требуют проверки токена
+PUBLIC_PATHS = [
+    "/",
+    "/auth/login",
+    "/auth/logout",
+    "/auth/telegram-login",
+    "/auth/token",
+    "/webhooks/freekassa",
+    "/webhooks/paykassa"
+]
+
 
 class TokenData(BaseModel):
     username: Optional[str] = None
@@ -94,3 +105,50 @@ async def get_token_from_request(request: Request) -> Optional[str]:
 
     # Если нет токена нигде, возвращаем None
     return None
+
+
+# Функция для проверки аутентификации в шаблонах
+async def verify_auth_for_templates(request: Request):
+    """Проверяет аутентификацию для шаблонных маршрутов"""
+
+    # Проверяем, находится ли путь в списке публичных маршрутов
+    if request.url.path in PUBLIC_PATHS:
+        return True
+
+    # Для статических файлов пропускаем проверку
+    if request.url.path.startswith("/static/"):
+        return True
+
+    # Получаем токен из запроса
+    token = await get_token_from_request(request)
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+
+    try:
+        # Декодируем JWT токен
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        telegram_id = payload.get("telegram_id")
+
+        if username is None or telegram_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+
+        if int(telegram_id) not in ADMIN_IDS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized"
+            )
+
+        return True
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )

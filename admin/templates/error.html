@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка {{ status_code }} - SE1DHE Bot Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="m-0"><i class="fas fa-exclamation-triangle"></i> Ошибка {{ status_code }}</h2>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">{{ message }}</p>
+                    <div class="mt-4">
+                        <a href="javascript:history.back()" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-arrow-left"></i> Вернуться назад
+                        </a>
+                        <a href="/dashboard" class="btn btn-primary">
+                            <i class="fas fa-home"></i> На главную
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

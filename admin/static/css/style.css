@@ -4,6 +4,132 @@ body {
     background-color: #f8f9fc;
 }
 
+/* Темная тема */
+body.dark-mode {
+    background-color: #283142;
+    color: #e0e0e0;
+}
+
+body.dark-mode .card {
+    background-color: #1e2635;
+    border-color: #384152;
+}
+
+body.dark-mode .card-header {
+    background-color: #263144;
+    border-color: #384152;
+}
+
+body.dark-mode .text-muted {
+    color: #a0a0a0 !important;
+}
+
+body.dark-mode .table {
+    color: #e0e0e0;
+}
+
+body.dark-mode .table-bordered {
+    border-color: #384152;
+}
+
+body.dark-mode .table th,
+body.dark-mode .table td {
+    border-color: #384152;
+}
+
+body.dark-mode .table-bordered > :not(caption) > * {
+    border-color: #384152;
+}
+
+body.dark-mode .bg-light {
+    background-color: #1e2635 !important;
+}
+
+body.dark-mode .navbar-light {
+    background-color: #1e2635 !important;
+    border-color: #384152 !important;
+}
+
+body.dark-mode .navbar-light .navbar-nav .nav-link {
+    color: #e0e0e0;
+}
+
+body.dark-mode .navbar-light .navbar-nav .nav-link:hover {
+    color: #ffffff;
+}
+
+body.dark-mode .list-group-item {
+    background-color: #1e2635;
+    color: #e0e0e0;
+    border-color: #384152;
+}
+
+body.dark-mode .list-group-item:hover {
+    background-color: #263144;
+}
+
+body.dark-mode .list-group-item.active {
+    background-color: #4e73df;
+    color: #ffffff;
+    border-color: #4e73df;
+}
+
+body.dark-mode .border-bottom,
+body.dark-mode .border-right,
+body.dark-mode .border-top {
+    border-color: #384152 !important;
+}
+
+body.dark-mode .text-primary {
+    color: #4e73df !important;
+}
+
+body.dark-mode .text-success {
+    color: #1cc88a !important;
+}
+
+body.dark-mode .text-warning {
+    color: #f6c23e !important;
+}
+
+body.dark-mode .text-danger {
+    color: #e74a3b !important;
+}
+
+body.dark-mode .dropdown-menu {
+    background-color: #1e2635;
+    border-color: #384152;
+}
+
+body.dark-mode .dropdown-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .dropdown-item:hover {
+    background-color: #263144;
+    color: #ffffff;
+}
+
+body.dark-mode .dropdown-divider {
+    border-color: #384152;
+}
+
+body.dark-mode .modal-content {
+    background-color: #1e2635;
+    border-color: #384152;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    border-color: #384152;
+}
+
+body.dark-mode .form-control {
+    background-color: #283142;
+    border-color: #384152;
+    color: #e0e0e0;
+}
+
 /* Стили для страницы входа */
 .login-page {
     background-color: #4e73df;
@@ -79,6 +205,10 @@ body {
     border-left: 0.25rem solid #f6c23e !important;
 }
 
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+
 /* Таблицы */
 .table-responsive {
     overflow-x: auto;
@@ -86,6 +216,15 @@ body {
 
 .table th {
     background-color: #f8f9fc;
+}
+
+/* Улучшенные стили для темной темы */
+body.dark-mode .table th {
+    background-color: #263144;
+}
+
+body.dark-mode .card-header .text-primary {
+    color: #4e73df !important;
 }
 
 /* Медиа-галерея */
@@ -122,11 +261,23 @@ body {
     width: 25px;
     height: 25px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Формы */
 .form-group {
     margin-bottom: 1rem;
+}
+
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+body.dark-mode .form-control:focus {
+    background-color: #2d3a4f;
 }
 
 /* Кнопки действий в таблицах */
@@ -149,6 +300,10 @@ body {
     width: 3px;
     background-color: #eeeeee;
     z-index: 0;
+}
+
+body.dark-mode .timeline:before {
+    background-color: #384152;
 }
 
 .timeline-item {
@@ -182,6 +337,12 @@ body {
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 }
 
+body.dark-mode .timeline-panel {
+    border-color: #384152;
+    background-color: #1e2635;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+}
+
 .timeline-panel:before {
     position: absolute;
     top: 26px;
@@ -194,6 +355,10 @@ body {
     content: " ";
 }
 
+body.dark-mode .timeline-panel:before {
+    border-right-color: #384152;
+}
+
 .timeline-panel:after {
     position: absolute;
     top: 27px;
@@ -204,6 +369,10 @@ body {
     border-left: 0 solid #fff;
     border-bottom: 14px solid transparent;
     content: " ";
+}
+
+body.dark-mode .timeline-panel:after {
+    border-right-color: #1e2635;
 }
 
 .bg-success {
@@ -230,4 +399,171 @@ body {
 
 .timeline-footer {
     margin-top: 10px;
+}
+
+/* Уведомления */
+#alerts-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 300px;
+    z-index: 9999;
+}
+
+#alerts-container .alert {
+    margin-bottom: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Пагинация */
+.pagination .page-link {
+    color: #4e73df;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+body.dark-mode .pagination .page-link {
+    background-color: #283142;
+    border-color: #384152;
+    color: #e0e0e0;
+}
+
+body.dark-mode .pagination .page-item.active .page-link {
+    background-color: #4e73df;
+    border-color: #4e73df;
+    color: #fff;
+}
+
+body.dark-mode .pagination .page-item.disabled .page-link {
+    background-color: #1e2635;
+    border-color: #384152;
+    color: #6c757d;
+}
+
+/* Улучшения для мобильных устройств */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    .timeline-panel {
+        width: calc(100% - 70px);
+    }
+
+    .media-item {
+        width: 120px;
+        height: 120px;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .chart-container {
+        height: 200px !important;
+    }
+}
+
+/* Улучшения для карточек на дашборде */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+}
+
+/* Стили для графиков */
+.chart-container {
+    position: relative;
+    margin: auto;
+    height: 300px;
+}
+
+/* Стилизация Summernote редактора для темной темы */
+body.dark-mode .note-editor.note-frame {
+    border-color: #384152;
+}
+
+body.dark-mode .note-editor.note-frame .note-editing-area {
+    background-color: #283142;
+    color: #e0e0e0;
+}
+
+body.dark-mode .note-editor.note-frame .note-statusbar {
+    background-color: #1e2635;
+    border-color: #384152;
+}
+
+body.dark-mode .note-editor.note-frame .note-toolbar {
+    background-color: #263144;
+    border-color: #384152;
+}
+
+body.dark-mode .note-btn {
+    background-color: #283142;
+    border-color: #384152;
+    color: #e0e0e0;
+}
+
+body.dark-mode .note-btn:hover {
+    background-color: #364356;
+    border-color: #4e5d75;
+}
+
+/* Стили для footer */
+footer {
+    margin-top: 2rem;
+}
+
+body.dark-mode footer {
+    background-color: #1e2635 !important;
+    border-color: #384152 !important;
+    color: #a0a0a0;
+}
+
+/* Улучшения для карусели */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    padding: 10px;
+}
+
+body.dark-mode .carousel-item .bg-light {
+    background-color: #283142 !important;
+}
+
+/* Стилизация модальных окон */
+.modal-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.modal-footer {
+    background-color: #f8f9fc;
+    border-top: 1px solid #e3e6f0;
+}
+
+/* Улучшения для кнопок дополнительных действий */
+.action-button {
+    transition: all 0.3s ease;
+}
+
+.action-button:hover {
+    transform: scale(1.05);
 }
