@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import uvicorn
+import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pathlib import Path
-from fastapi.responses import HTMLResponse
 
 from admin.middleware.auth_middleware import verify_token
 from admin.routers import auth, bots, users, payments, reports, changelogs
@@ -15,13 +16,16 @@ from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY
 # Получаем абсолютный путь к директории, где находится файл скрипта
 BASE_DIR = Path(__file__).resolve().parent
 
-# Используем абсолютный путь к директории static
+# Создаем директории для статических файлов, если их нет
+os.makedirs(BASE_DIR / "static", exist_ok=True)
+os.makedirs(BASE_DIR / "static/css", exist_ok=True)
+os.makedirs(BASE_DIR / "static/js", exist_ok=True)
 
+# Отключаем временно OpenAPI для решения проблемы с документацией
 app = FastAPI(
     title="SE1DHE Bot Admin API",
     description="Admin panel API for managing the Telegram bot shop",
     version="1.0.0",
-    # Временно отключаем документацию
     docs_url=None,
     redoc_url=None,
     openapi_url=None
@@ -61,10 +65,10 @@ async def root(request: Request):
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, token: str = Depends(oauth2_scheme)):
+async def dashboard(request: Request):
     """Главная страница админ-панели"""
-    user = verify_token(token)
-    return templates.TemplateResponse("dashboard/index.html", {"request": request, "user": user})
+    # Получаем токен из localStorage через JS
+    return templates.TemplateResponse("dashboard/index.html", {"request": request})
 
 
 if __name__ == "__main__":

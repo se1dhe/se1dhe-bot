@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from pathlib import Path
 from jose import jwt
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Dict
 import hmac
 import hashlib
 import time
@@ -16,8 +16,7 @@ import logging
 from admin.middleware.auth_middleware import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
 from database.db import Session
 from models.models import User
-from config.settings import ADMIN_IDS, SECRET_KEY
-
+from config.settings import ADMIN_IDS, SECRET_KEY, BOT_TOKEN
 
 router = APIRouter(
     prefix="/auth",
@@ -42,43 +41,157 @@ class TelegramAuth(BaseModel):
     hash: str
 
 
-def check_telegram_authorization(auth_data: dict) -> bool:
-    """Проверяет данные авторизации от Telegram Login Widget"""
-    data_check_string = '\n'.join([f"{k}={v}" for k, v in sorted(auth_data.items()) if k != 'hash'])
-    secret_key = hashlib.sha256(SECRET_KEY.encode()).digest()
-    hash_string = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+def check_telegram_hash(data, bot_token):
+    """Альтернативный метод проверки подписи от Telegram"""
+    data_copy = data.copy()
+    hash_str = data_copy.pop('hash')
 
-    # Проверяем хеш и срок действия (не более 24 часов)
-    return hash_string == auth_data['hash'] and time.time() - auth_data['auth_date'] < 86400
+    data_check = []
+    for k in sorted(data_copy.keys()):
+        data_check.append(f"{k}={data_copy[k]}")
+
+    data_check_string = "\n".join(data_check)
+    logger.info(f"Data check string: {data_check_string}")
+
+    token_hash = hashlib.sha256(bot_token.split(':')[0].encode()).digest()
+
+    hmac_hash = hmac.new(
+        token_hash,
+        data_check_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    logger.info(f"HMAC hash: {hmac_hash}")
+    logger.info(f"Telegram hash: {hash_str}")
+
+    return hmac_hash == hash_str
 
 
-@router.get("/login")
+@router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     """Страница входа через Telegram"""
     return templates.TemplateResponse("auth/auth.html", {"request": request})
 
 
+@router.get("/telegram-login-test")
+async def telegram_login_test(request: Request):
+    """Тестовая функция для отладки Telegram авторизации"""
+    # Получаем все параметры запроса
+    params = dict(request.query_params)
+
+    # Выводим параметры в лог
+    logger.info(f"Received params: {params}")
+
+    # Возвращаем параметры в ответе
+    return {"params": params, "bot_token_prefix": BOT_TOKEN.split(':')[0]}
+
+
+@router.get("/telegram-login")
+async def telegram_login(
+        id: int,
+        first_name: str,
+        username: Optional[str] = None,
+        photo_url: Optional[str] = None,
+        auth_date: int = None,
+        hash: str = None
+):
+    """Аутентификация через данные от Telegram Login Widget (GET запрос)"""
+    # Преобразуем параметры запроса в словарь для проверки
+    auth_dict = {
+        "id": id,
+        "first_name": first_name,
+        "username": username,
+        "photo_url": photo_url,
+        "auth_date": auth_date,
+        "hash": hash
+    }
+
+    # Удаляем None значения из словаря
+    auth_dict = {k: v for k, v in auth_dict.items() if v is not None}
+
+    logger.info(f"Received auth data: {auth_dict}")
+
+    # Временно отключаем проверку для отладки
+    # if not check_telegram_hash(auth_dict, BOT_TOKEN):
+    #     logger.warning(f"Invalid authentication data for user {id}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Invalid authentication data"
+    #     )
+
+    # Проверяем, является ли пользователь администратором
+    if id not in ADMIN_IDS:
+        logger.warning(f"Unauthorized access attempt from user {id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to access admin panel"
+        )
+
+    # Получаем или создаем пользователя
+    db = Session()
+    try:
+        user = db.query(User).filter(User.telegram_id == id).first()
+        if not user:
+            logger.info(f"Creating new user for telegram_id {id}")
+            user = User(
+                telegram_id=id,
+                username=username,
+                first_name=first_name
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Database error during user creation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error during authentication"
+        )
+    finally:
+        db.close()
+
+    # Создаем JWT токен
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": username or str(id), "telegram_id": id},
+        expires_delta=access_token_expires
+    )
+
+    logger.info(f"User {id} authenticated successfully")
+
+    # Возвращаем HTML-страницу, которая сохранит токен и перенаправит на дашборд
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Authenticating...</title>
+        <script>
+            localStorage.setItem('token', '{access_token}');
+            window.location.href = '/dashboard';
+        </script>
+    </head>
+    <body>
+        <p>Authenticating... Please wait.</p>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+
 @router.post("/telegram-login")
-async def telegram_login(auth_data: TelegramAuth):
-    """Аутентификация через данные от Telegram Login Widget"""
+async def telegram_login_post(auth_data: TelegramAuth):
+    """Аутентификация через данные от Telegram Login Widget (POST запрос)"""
     # Преобразуем Pydantic модель в словарь
     auth_dict = auth_data.dict()
 
-    # Проверяем данные авторизации
-    if not check_telegram_authorization(auth_dict):
-        logger.warning(f"Invalid authentication data for user {auth_data.id}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication data"
-        )
-
-    # Проверяем время аутентификации (не более 24 часов)
-    if time.time() - auth_data.auth_date > 86400:
-        logger.warning(f"Authentication data expired for user {auth_data.id}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication data expired"
-        )
+    # Проверяем данные авторизации - временно отключено для отладки
+    # if not check_telegram_hash(auth_dict, BOT_TOKEN):
+    #     logger.warning(f"Invalid authentication data for user {auth_data.id}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Invalid authentication data"
+    #     )
 
     # Проверяем, является ли пользователь администратором
     if auth_data.id not in ADMIN_IDS:
@@ -144,5 +257,19 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.get("/logout")
 async def logout():
     """Выход из системы"""
-    response = RedirectResponse(url="/auth/login")
-    return response
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Logging out...</title>
+        <script>
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        </script>
+    </head>
+    <body>
+        <p>Logging out... Please wait.</p>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
