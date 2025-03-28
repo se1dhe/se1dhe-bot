@@ -5,9 +5,11 @@ from fastapi.responses import JSONResponse
 from pathlib import Path
 import os
 import shutil
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from admin.utils import serialize_model
 from models.models import Bot, BotCategory, BotMedia
 from database.db import get_db
 from config.settings import BOT_FILES_DIR, MEDIA_ROOT
@@ -136,7 +138,7 @@ async def delete_category(category_id: int, db: Session = Depends(get_db)):
 async def get_bots(db: Session = Depends(get_db)):
     """Получение списка всех ботов"""
     bots = db.query(Bot).all()
-    return bots
+    return [serialize_model(bot) for bot in bots]
 
 
 @router.get("/count")
@@ -484,7 +486,7 @@ async def create_bot_page(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse(
         "bots/create.html",
-        {"request": request, "categories": categories}
+        {"request": request, "categories.js": categories}
     )
 
 
@@ -510,7 +512,7 @@ async def edit_bot_page(bot_id: int, request: Request, db: Session = Depends(get
         {
             "request": request,
             "bot": bot,
-            "categories": categories,
+            "categories.js": categories,
             "media_files": [
                 {
                     "id": media.id,
@@ -524,7 +526,151 @@ async def edit_bot_page(bot_id: int, request: Request, db: Session = Depends(get
     )
 
 
+# admin/routers/bots.py
+
+@router.post("/{bot_id}/media/bulk", response_model=List[Dict])
+async def add_bot_media_bulk(
+        bot_id: int,
+        media_files: List[UploadFile] = File(...),
+        db: Session = Depends(get_db)
+):
+    """Добавление нескольких медиафайлов к боту"""
+    # Проверяем существование бота
+    bot = db.query(Bot).filter(Bot.id == bot_id).first()
+    if not bot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bot not found"
+        )
+
+    # Создаем директорию для медиафайлов бота, если она не существует
+    media_dir = BOT_FILES_DIR / str(bot_id) / "media"
+    os.makedirs(media_dir, exist_ok=True)
+
+    added_media = []
+
+    for media_file in media_files:
+        # Определяем тип файла
+        file_type = "photo"
+        mime_type = media_file.content_type
+        if mime_type and mime_type.startswith("video"):
+            file_type = "video"
+
+        # Валидация файла
+        try:
+            allowed_extensions = ["jpg", "jpeg", "png", "gif"] if file_type == "photo" else ["mp4", "avi", "mov"]
+            max_size_mb = 10 if file_type == "photo" else 50
+
+            validate_file(media_file, allowed_extensions, max_size_mb)
+
+            # Сохраняем медиафайл
+            file_path = media_dir / f"{file_type}_{media_file.filename}"
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(media_file.file, buffer)
+
+            # Создаем запись о медиафайле в БД
+            bot_media = BotMedia(
+                bot_id=bot_id,
+                file_path=str(file_path.relative_to(MEDIA_ROOT)),
+                file_type=file_type
+            )
+            db.add(bot_media)
+            db.commit()
+            db.refresh(bot_media)
+
+            added_media.append({
+                "id": bot_media.id,
+                "bot_id": bot_id,
+                "file_path": bot_media.file_path,
+                "file_type": file_type,
+                "url": f"/media/{bot_media.file_path}"
+            })
+
+        except Exception as e:
+            logger.error(f"Error adding media file {media_file.filename}: {e}")
+            # Продолжаем с другими файлами
+
+    return added_media
+
+
+@router.put("/{bot_id}/media/{media_id}", response_model=Dict)
+async def update_bot_media(
+        bot_id: int,
+        media_id: int,
+        file_type: str = Form(...),
+        db: Session = Depends(get_db)
+):
+    """Обновление типа медиафайла бота"""
+    # Проверяем существование медиафайла
+    media = db.query(BotMedia).filter(
+        BotMedia.id == media_id,
+        BotMedia.bot_id == bot_id
+    ).first()
+
+    if not media:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media not found or does not belong to this bot"
+        )
+
+    # Проверяем тип файла
+    if file_type not in ["photo", "video"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Must be 'photo' or 'video'"
+        )
+
+    # Обновляем тип файла
+    media.file_type = file_type
+    db.commit()
+    db.refresh(media)
+
+    return {
+        "id": media.id,
+        "bot_id": bot_id,
+        "file_path": media.file_path,
+        "file_type": media.file_type,
+        "url": f"/media/{media.file_path}"
+    }
+
+
+@router.post("/{bot_id}/media/reorder", response_model=Dict)
+async def reorder_bot_media(
+        bot_id: int,
+        order: List[int] = Body(..., embed=True),
+        db: Session = Depends(get_db)
+):
+    """Изменение порядка медиафайлов бота"""
+    # Проверяем существование бота
+    bot = db.query(Bot).filter(Bot.id == bot_id).first()
+    if not bot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bot not found"
+        )
+
+    # Получаем все медиафайлы бота
+    media_files = db.query(BotMedia).filter(BotMedia.bot_id == bot_id).all()
+    media_ids = [media.id for media in media_files]
+
+    # Проверяем, что все ID из order существуют в media_ids
+    if not all(media_id in media_ids for media_id in order):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid media IDs in order"
+        )
+
+    # Обновляем порядок (предполагается, что у BotMedia есть поле order)
+    # Если такого поля нет, нужно добавить его через миграцию
+    for i, media_id in enumerate(order):
+        db.query(BotMedia).filter(BotMedia.id == media_id).update({"order": i})
+
+    db.commit()
+
+    return {"success": True, "message": "Media order updated successfully"}
+
+
 @router.get("/page/categories", response_class=templates.TemplateResponse)
 async def categories_page(request: Request):
     """Страница со списком категорий ботов"""
-    return templates.TemplateResponse("bots/categories.html", {"request": request})
+    return templates.TemplateResponse("bots/categories.js.html", {"request": request})

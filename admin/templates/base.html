@@ -97,123 +97,31 @@
         </div>
     </div>
 
-    <!-- Подключение jQuery и Bootstrap через CDN -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    // Переключение боковой панели
-    $("#menu-toggle").click(function(e) {
-        e.preventDefault();
-        $("#wrapper").toggleClass("toggled");
-    });
+    <!-- Обновление блока подключения JS в admin/templates/base.html -->
+<!-- Подключение jQuery и Bootstrap через CDN -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    // Проверка и настройка токена для API-запросов
-    $(document).ready(function() {
-        const token = localStorage.getItem('token');
+<!-- Подключаем общие JS файлы -->
+<script src="{{ url_for('static', path='/js/common.js') }}"></script>
 
-        // Получаем данные пользователя из токена (если есть)
-        if (token) {
-            try {
-                // Парсим JWT токен (часть между первой и второй точкой содержит данные)
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
+<!-- Подключаем дополнительные JS файлы в зависимости от страницы -->
+{% if request.url.path.startswith('/dashboard') %}
+<script src="{{ url_for('static', path='/js/dashboard.js') }}"></script>
+{% elif request.url.path.startswith('/bots') %}
+<script src="{{ url_for('static', path='/js/bots.js') }}"></script>
+{% elif request.url.path.startswith('/users') %}
+<script src="{{ url_for('static', path='/js/users.js') }}"></script>
+{% elif request.url.path.startswith('/payments') %}
+<script src="{{ url_for('static', path='/js/payments.js') }}"></script>
+{% elif request.url.path.startswith('/reports') %}
+<script src="{{ url_for('static', path='/js/reports.js') }}"></script>
+{% elif request.url.path.startswith('/changelogs') %}
+<script src="{{ url_for('static', path='/js/changelogs.js') }}"></script>
+{% elif request.url.path == '/' or request.url.path.startswith('/auth') %}
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+{% endif %}
 
-                const payload = JSON.parse(jsonPayload);
-                if (payload.sub) {
-                    $('#username').text(payload.sub);
-                }
-            } catch (e) {
-                console.error('Error parsing token:', e);
-            }
-        }
-
-        // Добавление токена к каждому AJAX-запросу
-        $.ajaxSetup({
-            beforeSend: function(xhr) {
-                if (token) {
-                    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-                }
-            },
-            error: function(xhr, status, error) {
-                // Обработка ошибок AJAX
-                if (xhr.status === 401) {
-                    console.log('Authentication error in API request');
-                    // Показываем уведомление пользователю
-                    if (window.showAlert) {
-                        window.showAlert('Ошибка аутентификации при запросе к API. Попробуйте перезайти.', 'danger');
-                    }
-                }
-            }
-        });
-
-        // Подсветка активного пункта меню
-        var currentPath = window.location.pathname;
-
-        if (currentPath === '/dashboard') {
-            $('#nav-dashboard').addClass('active');
-        } else if (currentPath.startsWith('/bots')) {
-            if (currentPath.includes('/categories')) {
-                $('#nav-categories').addClass('active');
-            } else {
-                $('#nav-bots').addClass('active');
-            }
-        } else if (currentPath.startsWith('/users')) {
-            $('#nav-users').addClass('active');
-        } else if (currentPath.startsWith('/payments')) {
-            $('#nav-payments').addClass('active');
-        } else if (currentPath.startsWith('/reports')) {
-            $('#nav-reports').addClass('active');
-        } else if (currentPath.startsWith('/changelogs')) {
-            $('#nav-changelogs').addClass('active');
-        }
-
-        // Функция для добавления уведомлений
-        window.showAlert = function(message, type = 'success', duration = 5000) {
-            const id = 'alert-' + Date.now();
-            const html = `
-                <div id="${id}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-
-            $('#alerts-container').append(html);
-
-            if (duration > 0) {
-                setTimeout(function() {
-                    $('#' + id).fadeOut('slow', function() { $(this).remove(); });
-                }, duration);
-            }
-        };
-
-        // Обработчик переключения темы
-        $('#theme-toggle').click(function(e) {
-            e.preventDefault();
-
-            // Переключаем тему
-            $('body').toggleClass('dark-mode');
-
-            // Меняем иконку и текст
-            const isDarkMode = $('body').hasClass('dark-mode');
-            if (isDarkMode) {
-                $(this).html('<i class="fas fa-sun"></i> Светлая тема');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                $(this).html('<i class="fas fa-moon"></i> Тёмная тема');
-                localStorage.setItem('theme', 'light');
-            }
-        });
-
-        // Проверяем сохраненную тему
-        if (localStorage.getItem('theme') === 'dark') {
-            $('body').addClass('dark-mode');
-            $('#theme-toggle').html('<i class="fas fa-sun"></i> Светлая тема');
-        }
-    });
-</script>
-    {% block extra_js %}{% endblock %}
+{% block extra_js %}{% endblock %}
 </body>
 </html>

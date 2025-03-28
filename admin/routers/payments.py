@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from admin.utils import serialize_model
 from models.models import Order, User, Bot, OrderStatus
 from database.db import get_db
 from sqlalchemy import func, desc
@@ -35,12 +37,11 @@ class PaymentStats(BaseModel):
     cancelled_orders: int
 
 
-# Маршруты для платежей
 @router.get("/", response_model=List[OrderResponse])
 async def get_orders(db: Session = Depends(get_db)):
     """Получение списка всех заказов"""
     orders = db.query(Order).all()
-    return orders
+    return [serialize_model(order) for order in orders]
 
 
 @router.get("/stats", response_model=PaymentStats)

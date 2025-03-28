@@ -18,7 +18,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from admin.middleware.auth_middleware import verify_token, get_token_from_request
-from admin.routers import auth, webhooks
 from config.settings import ADMIN_API_HOST, ADMIN_API_PORT, SECRET_KEY
 
 # Получаем абсолютный путь к директории, где находится файл скрипта
@@ -109,13 +108,13 @@ async def create_bot_page(request: Request):
         categories = db.query(BotCategory).all()
         return templates.TemplateResponse(
             "bots/create.html",
-            {"request": request, "categories": categories}
+            {"request": request, "categories.js": categories}
         )
     except Exception as e:
-        logger.error(f"Error loading categories: {e}")
+        logger.error(f"Error loading categories.js: {e}")
         return templates.TemplateResponse(
             "bots/create.html",
-            {"request": request, "categories": []}
+            {"request": request, "categories.js": []}
         )
     finally:
         db.close()
@@ -145,7 +144,7 @@ async def edit_bot_page(bot_id: int, request: Request):
             {
                 "request": request,
                 "bot": bot,
-                "categories": categories,
+                "categories.js": categories,
                 "media_files": [
                     {
                         "id": media.id,
@@ -329,8 +328,6 @@ async def error_page(request: Request, message: str = "Unknown error", status_co
     )
 
 
-# Регистрация маршрутов для API с проверкой токена
-from admin.routers import bots, users, payments, reports, changelogs
 
 # API маршруты с проверкой токена (добавим после HTML-маршрутов)
 api_routes = [

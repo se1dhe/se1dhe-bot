@@ -1,22 +1,5 @@
-# -*- coding: utf-8 -*-
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel
-from pathlib import Path
-from jose import jwt
-from datetime import timedelta
-from typing import Optional, Dict
-import hmac
-import hashlib
-import time
-import logging
 
-from admin.middleware.auth_middleware import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
-from database.db import Session
-from models.models import User
-from config.settings import ADMIN_IDS, SECRET_KEY, BOT_TOKEN
+
 
 router = APIRouter(
     prefix="/auth",
@@ -140,23 +123,11 @@ async def telegram_login(request: Request):
 
     logger.info(f"User {user_id} authenticated successfully via GET")
 
-    # Возвращаем HTML-страницу, которая сохранит токен и перенаправит на дашборд
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Authenticating...</title>
-        <script>
-            localStorage.setItem('token', '{access_token}');
-            window.location.href = '/dashboard';
-        </script>
-    </head>
-    <body>
-        <p>Authenticating... Please wait.</p>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+    # Возвращаем шаблон с результатом аутентификации
+    return templates.TemplateResponse(
+        "auth/auth_result.html",
+        {"request": request, "token": access_token, "success": True}
+    )
 
 
 @router.post("/telegram-login")
@@ -233,21 +204,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.get("/logout")
-async def logout():
+async def logout(request: Request):
     """Выход из системы"""
-    html_content = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Logging out...</title>
-        <script>
-            localStorage.removeItem('token');
-            window.location.href = '/';
-        </script>
-    </head>
-    <body>
-        <p>Logging out... Please wait.</p>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+    return templates.TemplateResponse("auth/logout.html", {"request": request})

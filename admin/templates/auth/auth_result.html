@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Авторизация...</title>
+    <script>
+        function handleAuthResult(token, success = true) {
+            if (success) {
+                localStorage.setItem('token', token);
+                window.location.href = '/dashboard';
+            } else {
+                alert('Ошибка авторизации! Пожалуйста, попробуйте снова.');
+                window.location.href = '/';
+            }
+        }
+
+        // Вызываем функцию с переданными параметрами
+        handleAuthResult('{{ token }}', {{ success|lower }});
+    </script>
+</head>
+<body>
+    <p>Авторизация... Пожалуйста, подождите.</p>
+</body>
+</html>

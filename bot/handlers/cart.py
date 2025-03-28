@@ -22,12 +22,14 @@ async def cmd_cart(message: types.Message):
     await show_cart(message)
 
 
+# bot/handlers/cart.py
+
 async def show_cart(message: types.Message):
     """
     Показывает содержимое корзины пользователя
     """
     user_id = message.from_user.id
-    language = message.from_user.language_code or DEFAULT_LANGUAGE
+    i18n = message.bot.get('i18n', lambda x: x)  # Получаем функцию локализации
 
     db = DbSession()
     try:
@@ -36,7 +38,7 @@ async def show_cart(message: types.Message):
 
         if not user:
             logger.warning(f"User {user_id} not found in database")
-            await message.answer("Пользователь не найден. Пожалуйста, запустите бота командой /start")
+            await message.answer(i18n("error_user_not_found"))
             return
 
         # Получаем корзину пользователя
@@ -45,12 +47,12 @@ async def show_cart(message: types.Message):
         # Если корзины нет или она пуста
         if not cart or not cart.items:
             await message.answer(
-                get_localized_text('cart_title', language) + "\n\n" +
-                get_localized_text('cart_empty', language),
+                i18n("cart_title") + "\n\n" +
+                i18n("cart_empty"),
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=[
                         [InlineKeyboardButton(
-                            text=get_localized_text('catalog', language),
+                            text=i18n("catalog"),
                             callback_data="menu:catalog"
                         )]
                     ]
@@ -59,8 +61,8 @@ async def show_cart(message: types.Message):
             return
 
         # Формируем текст с содержимым корзины
-        cart_text = get_localized_text('cart_title', language) + "\n\n"
-        cart_text += get_localized_text('cart_description', language) + "\n\n"
+        cart_text = i18n("cart_title") + "\n\n"
+        cart_text += i18n("cart_description") + "\n\n"
 
         total_price = 0
 
@@ -91,21 +93,21 @@ async def show_cart(message: types.Message):
             )
 
         # Добавляем итоговую стоимость
-        cart_text += "\n" + get_localized_text('cart_total', language).format(total=total_price)
+        cart_text += "\n" + i18n("cart_total", {"total": total_price})
 
         # Добавляем кнопки
         keyboard.add(InlineKeyboardButton(
-            text=get_localized_text('cart_checkout', language),
+            text=i18n("cart_checkout"),
             callback_data="cart:checkout"
         ))
 
         keyboard.add(InlineKeyboardButton(
-            text=get_localized_text('cart_clear', language),
+            text=i18n("cart_clear"),
             callback_data="cart:clear"
         ))
 
         keyboard.add(InlineKeyboardButton(
-            text=get_localized_text('back', language) + " ◀️",
+            text=i18n("back") + " ◀️",
             callback_data="menu:main"
         ))
 
@@ -114,7 +116,7 @@ async def show_cart(message: types.Message):
 
     except Exception as e:
         logger.error(f"Error showing cart: {e}")
-        await message.answer("Произошла ошибка при загрузке корзины. Пожалуйста, попробуйте позже.")
+        await message.answer(i18n("error_general"))
     finally:
         db.close()
 

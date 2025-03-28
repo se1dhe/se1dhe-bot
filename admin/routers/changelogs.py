@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from admin.utils import serialize_model
 from models.models import Changelog, Bot
 from database.db import get_db
 from sqlalchemy import desc
@@ -30,12 +32,11 @@ class ChangelogResponse(BaseModel):
     created_at: str
 
 
-# Маршруты для ченжлогов
 @router.get("/", response_model=List[ChangelogResponse])
 async def get_changelogs(db: Session = Depends(get_db)):
     """Получение списка всех ченжлогов"""
     changelogs = db.query(Changelog).order_by(desc(Changelog.created_at)).all()
-    return changelogs
+    return [serialize_model(changelog) for changelog in changelogs]
 
 
 @router.get("/bot/{bot_id}", response_model=List[ChangelogResponse])

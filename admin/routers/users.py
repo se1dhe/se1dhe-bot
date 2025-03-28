@@ -39,7 +39,7 @@ async def get_users(db: Session = Depends(get_db)):
     """Получение списка всех пользователей"""
     users = db.query(User).all()
 
-    # Преобразуем datetime в строки
+    # Используем serialize_model для правильной сериализации datetime полей
     serialized_users = [serialize_model(user) for user in users]
 
     return serialized_users
