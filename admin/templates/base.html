@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="dark-mode">
     <div class="d-flex" id="wrapper">
         <!-- Sidebar -->
         <div class="bg-light border-right" id="sidebar-wrapper">
@@ -60,10 +60,6 @@
                                 <span id="username">Администратор</span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="#" id="theme-toggle">
-                                    <i class="fas fa-moon"></i> Тёмная тема
-                                </a>
-                                <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="/auth/logout">
                                     <i class="fas fa-sign-out-alt"></i> Выход
                                 </a>

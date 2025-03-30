@@ -60,37 +60,10 @@ function highlightActiveMenuItem() {
     }
 }
 
-// Обработчик переключения темы
-function setupThemeToggle() {
-    $('#theme-toggle').click(function(e) {
-        e.preventDefault();
-
-        // Переключаем тему
-        $('body').toggleClass('dark-mode');
-
-        // Меняем иконку и текст
-        const isDarkMode = $('body').hasClass('dark-mode');
-        if (isDarkMode) {
-            $(this).html('<i class="fas fa-sun"></i> Светлая тема');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            $(this).html('<i class="fas fa-moon"></i> Тёмная тема');
-            localStorage.setItem('theme', 'light');
-        }
-    });
-
-    // Проверяем сохраненную тему
-    if (localStorage.getItem('theme') === 'dark') {
-        $('body').addClass('dark-mode');
-        $('#theme-toggle').html('<i class="fas fa-sun"></i> Светлая тема');
-    }
-}
-
 // Инициализация при загрузке страницы
 $(document).ready(function() {
     setupAjaxAuth();
     highlightActiveMenuItem();
-    setupThemeToggle();
 
     // Переключение боковой панели
     $("#menu-toggle").click(function(e) {
