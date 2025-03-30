@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mt-4">Категории ботов</h1>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCategoryModal">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
         <i class="fas fa-plus"></i> Добавить категорию
     </button>
 </div>
@@ -23,12 +23,13 @@
                         <th>Название</th>
                         <th>Описание</th>
                         <th>Скидка</th>
+                        <th>Кол-во ботов</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="5" class="text-center">Загрузка данных...</td>
+                        <td colspan="6" class="text-center">Загрузка данных...</td>
                     </tr>
                 </tbody>
             </table>
@@ -37,33 +38,32 @@
 </div>
 
 <!-- Модальное окно добавления категории -->
-<div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Добавление категории</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="addCategoryModalLabel">Добавление категории</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="add-category-form">
-                    <div class="form-group">
-                        <label for="name">Название</label>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Название</label>
                         <input type="text" class="form-control" id="name" name="name" required>
                     </div>
-                    <div class="form-group">
-                        <label for="description">Описание</label>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="discount">Скидка (%)</label>
+                    <div class="mb-3">
+                        <label for="discount" class="form-label">Скидка (%)</label>
                         <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" value="0">
+                        <div class="form-text">Скидка будет применена ко всем ботам в данной категории</div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="save-category">Сохранить</button>
             </div>
         </div>
@@ -71,34 +71,33 @@
 </div>
 
 <!-- Модальное окно редактирования категории -->
-<div class="modal fade" id="editCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Редактирование категории</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="editCategoryModalLabel">Редактирование категории</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="edit-category-form">
                     <input type="hidden" id="edit-id" name="id">
-                    <div class="form-group">
-                        <label for="edit-name">Название</label>
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Название</label>
                         <input type="text" class="form-control" id="edit-name" name="name" required>
                     </div>
-                    <div class="form-group">
-                        <label for="edit-description">Описание</label>
+                    <div class="mb-3">
+                        <label for="edit-description" class="form-label">Описание</label>
                         <textarea class="form-control" id="edit-description" name="description" rows="3"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="edit-discount">Скидка (%)</label>
+                    <div class="mb-3">
+                        <label for="edit-discount" class="form-label">Скидка (%)</label>
                         <input type="number" class="form-control" id="edit-discount" name="discount" min="0" max="100" value="0">
+                        <div class="form-text">Скидка будет применена ко всем ботам в данной категории</div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-primary" id="update-category">Сохранить</button>
             </div>
         </div>
@@ -106,21 +105,19 @@
 </div>
 
 <!-- Модальное окно подтверждения удаления -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Подтверждение удаления</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="deleteCategoryModalLabel">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Вы уверены, что хотите удалить категорию <strong id="delete-category-name"></strong>?</p>
-                <p class="text-danger">Это действие невозможно отменить! Все боты в этой категории станут без категории.</p>
+                <p class="text-danger">Это действие невозможно отменить! Все боты в этой категории будут переведены в состояние "Без категории".</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <button type="button" class="btn btn-danger" id="confirm-delete">Удалить</button>
             </div>
         </div>
@@ -129,129 +126,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    $(document).ready(function() {
-        // Загрузка категорий
-        function loadCategories() {
-            $.get('/bots/categories', function(data) {
-                var tableBody = $('#categories-table tbody');
-                tableBody.empty();
-
-                if (data.length === 0) {
-                    tableBody.append('<tr><td colspan="5" class="text-center">Нет данных</td></tr>');
-                } else {
-                    data.forEach(function(category) {
-                        tableBody.append(`
-                            <tr>
-                                <td>${category.id}</td>
-                                <td>${category.name}</td>
-                                <td>${category.description || '-'}</td>
-                                <td>${category.discount}%</td>
-                                <td>
-                                    <button class="btn btn-primary btn-sm edit-category" data-id="${category.id}">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm delete-category" data-id="${category.id}" data-name="${category.name}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
-                    });
-                }
-            });
-        }
-
-        // Загрузка категорий при загрузке страницы
-        loadCategories();
-
-        // Добавление категории
-        $('#save-category').click(function() {
-            var formData = {
-                name: $('#name').val(),
-                description: $('#description').val(),
-                discount: parseFloat($('#discount').val() || 0)
-            };
-
-            $.ajax({
-                url: '/bots/categories',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                success: function(result) {
-                    $('#addCategoryModal').modal('hide');
-                    $('#add-category-form')[0].reset();
-                    loadCategories();
-                },
-                error: function(error) {
-                    alert('Ошибка при добавлении категории: ' + error.responseJSON.detail);
-                }
-            });
-        });
-
-        // Редактирование категории - открытие модального окна
-        $(document).on('click', '.edit-category', function() {
-            var categoryId = $(this).data('id');
-
-            $.get('/bots/categories/' + categoryId, function(category) {
-                $('#edit-id').val(category.id);
-                $('#edit-name').val(category.name);
-                $('#edit-description').val(category.description || '');
-                $('#edit-discount').val(category.discount);
-                $('#editCategoryModal').modal('show');
-            });
-        });
-
-        // Сохранение отредактированной категории
-        $('#update-category').click(function() {
-            var categoryId = $('#edit-id').val();
-            var formData = {
-                name: $('#edit-name').val(),
-                description: $('#edit-description').val(),
-                discount: parseFloat($('#edit-discount').val() || 0)
-            };
-
-            $.ajax({
-                url: '/bots/categories/' + categoryId,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                success: function(result) {
-                    $('#editCategoryModal').modal('hide');
-                    loadCategories();
-                },
-                error: function(error) {
-                    alert('Ошибка при обновлении категории: ' + error.responseJSON.detail);
-                }
-            });
-        });
-
-        // Удаление категории - открытие модального окна
-        $(document).on('click', '.delete-category', function() {
-            var categoryId = $(this).data('id');
-            var categoryName = $(this).data('name');
-
-            $('#delete-category-name').text(categoryName);
-            $('#confirm-delete').data('id', categoryId);
-            $('#deleteCategoryModal').modal('show');
-        });
-
-        // Подтверждение удаления категории
-        $('#confirm-delete').click(function() {
-            var categoryId = $(this).data('id');
-
-            $.ajax({
-                url: '/bots/categories/' + categoryId,
-                type: 'DELETE',
-                success: function() {
-                    $('#deleteCategoryModal').modal('hide');
-                    loadCategories();
-                },
-                error: function(error) {
-                    alert('Ошибка при удалении категории: ' + error.responseJSON.detail);
-                }
-            });
-        });
-    });
-</script>
+<script src="{{ url_for('static', path='/js/categories.js') }}"></script>
 {% endblock %}

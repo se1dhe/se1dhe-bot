@@ -125,18 +125,65 @@ async def delete_category(category_id: int, db: Session = Depends(get_db)):
             detail="Category not found"
         )
 
-    # Проверяем, есть ли боты в этой категории
-    bots_count = db.query(Bot).filter(Bot.category_id == category_id).count()
-    if bots_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete category with bots. Remove bots first or change their category."
-        )
+    # Получаем все боты в данной категории
+    bots_in_category = db.query(Bot).filter(Bot.category_id == category_id).all()
 
+    # Устанавливаем category_id = None для всех ботов в этой категории
+    for bot in bots_in_category:
+        bot.category_id = None
+
+    # Удаляем категорию
     db.delete(db_category)
     db.commit()
-    return {"message": "Category deleted successfully"}
 
+    return {
+        "message": f"Category deleted successfully. {len(bots_in_category)} bots were moved to 'No category' state."}
+
+
+@router.get("/categories/stats")
+async def get_categories_stats(db: Session = Depends(get_db)):
+    """Получение статистики по категориям"""
+    try:
+        # Получаем все категории
+        categories = db.query(BotCategory).all()
+
+        # Подготавливаем результат
+        result = []
+
+        # Для каждой категории считаем количество ботов и общую сумму
+        for category in categories:
+            bots_count = db.query(Bot).filter(Bot.category_id == category.id).count()
+            total_price = db.query(func.sum(Bot.price)).filter(Bot.category_id == category.id).scalar() or 0
+
+            result.append({
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+                "discount": category.discount,
+                "bots_count": bots_count,
+                "total_price": float(total_price)
+            })
+
+        # Также добавляем статистику для ботов без категории
+        uncategorized_count = db.query(Bot).filter(Bot.category_id == None).count()
+        uncategorized_price = db.query(func.sum(Bot.price)).filter(Bot.category_id == None).scalar() or 0
+
+        result.append({
+            "id": None,
+            "name": "Без категории",
+            "description": None,
+            "discount": 0,
+            "bots_count": uncategorized_count,
+            "total_price": float(uncategorized_price)
+        })
+
+        return result
+    except Exception as e:
+        logger.error(f"Error getting categories stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting categories stats: {str(e)}"
+        )
 
 # Маршруты для ботов
 @router.get("/", response_model=List[BotResponse])
@@ -187,68 +234,131 @@ async def create_bot(
         db: Session = Depends(get_db)
 ):
     """Создание нового бота"""
-    # Проверяем существование категории, если указана
-    if category_id:
-        category = db.query(BotCategory).filter(BotCategory.id == category_id).first()
-        if not category:
+    try:
+        # Проверяем существование категории, если указана
+        category_discount = 0
+        if category_id and int(category_id) > 0:
+            category = db.query(BotCategory).filter(BotCategory.id == category_id).first()
+            if not category:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Category not found"
+                )
+            category_discount = category.discount
+            # Преобразуем category_id в int или None
+            category_id = int(category_id)
+        else:
+            category_id = None
+
+        # Если не указана скидка для бота, используем скидку категории
+        if discount == 0 and category_discount > 0:
+            discount = category_discount
+
+        # Создаем запись бота в БД
+        bot = Bot(
+            name=name,
+            description=description,
+            price=price,
+            category_id=category_id,
+            discount=discount,
+            support_group_link=support_group_link
+        )
+        db.add(bot)
+        db.commit()
+        db.refresh(bot)
+
+        # Обрабатываем загрузку архива, если предоставлен
+        if archive_file and archive_file.filename:
+            try:
+                # Создаем директорию для файлов бота, если она не существует
+                bot_dir = BOT_FILES_DIR / str(bot.id)
+                os.makedirs(bot_dir, exist_ok=True)
+
+                # Проверяем расширение файла
+                file_ext = archive_file.filename.split('.')[-1].lower()
+                if file_ext not in ['zip', 'rar', '7z']:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid archive format. Allowed formats: zip, rar, 7z"
+                    )
+
+                # Генерируем безопасное имя файла
+                safe_filename = f"bot_{bot.id}_archive.{file_ext}"
+
+                # Сохраняем архив
+                archive_path = bot_dir / safe_filename
+                with open(archive_path, "wb") as buffer:
+                    shutil.copyfileobj(archive_file.file, buffer)
+
+                # Обновляем путь к архиву в БД
+                bot.archive_path = str(archive_path.relative_to(MEDIA_ROOT))
+                db.commit()
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error saving archive file: {e}")
+                # Продолжаем выполнение, даже если возникла ошибка с архивом
+
+        # Создаем README в Telegraph, если предоставлен контент
+        if readme_content and readme_content.strip():
+            try:
+                # Используем нашу утилиту для создания Telegraph страницы
+                from utils.telegraph_utils import create_telegraph_page
+
+                # Создаем страницу
+                url = create_telegraph_page(
+                    title=f"README: {bot.name}",
+                    content=readme_content,
+                    author="SE1DHE Bot"
+                )
+
+                if url:
+                    # Обновляем URL README в БД
+                    bot.readme_url = url
+                    db.commit()
+            except Exception as e:
+                logger.error(f"Error creating Telegraph page: {e}")
+                # Продолжаем выполнение, даже если возникла ошибка с README
+
+        db.refresh(bot)
+        return bot
+    except HTTPException:
+        # Пробрасываем HTTP исключения дальше
+        raise
+    except Exception as e:
+        logger.error(f"Error creating bot: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating bot: {str(e)}"
+        )
+
+
+@router.get("/{bot_id}/readme-content")
+async def get_readme_content(bot_id: int, db: Session = Depends(get_db)):
+    """Получение содержимого README для бота"""
+    try:
+        # Получаем информацию о боте
+        bot = db.query(Bot).filter(Bot.id == bot_id).first()
+        if not bot or not bot.readme_url:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
+                detail="Bot README not found"
             )
 
-    # Создаем запись бота в БД
-    bot = Bot(
-        name=name,
-        description=description,
-        price=price,
-        category_id=category_id,
-        discount=discount,
-        support_group_link=support_group_link
-    )
-    db.add(bot)
-    db.commit()
-    db.refresh(bot)
+        # Получаем HTML-контент с Telegra.ph
+        from utils.telegraph_utils import get_telegraph_content
 
-    # Обрабатываем загрузку архива, если предоставлен
-    if archive_file:
-        # Создаем директорию для файлов бота, если она не существует
-        bot_dir = BOT_FILES_DIR / str(bot.id)
-        os.makedirs(bot_dir, exist_ok=True)
+        content = get_telegraph_content(bot.readme_url)
+        return {"content": content}
 
-        # Сохраняем архив
-        archive_path = bot_dir / f"{archive_file.filename}"
-        with open(archive_path, "wb") as buffer:
-            shutil.copyfileobj(archive_file.file, buffer)
-
-        # Обновляем путь к архиву в БД
-        bot.archive_path = str(archive_path.relative_to(MEDIA_ROOT))
-        db.commit()
-
-    # Создаем README в Telegraph, если предоставлен контент
-    if readme_content:
-        try:
-            # Инициализируем клиент Telegraph
-            telegraph_client = telegraph.Telegraph(TELEGRAPH_TOKEN)
-
-            # Создаем страницу
-            response = telegraph_client.create_page(
-                title=f"README: {bot.name}",
-                html_content=readme_content,
-                author_name="SE1DHE Bot"
-            )
-
-            # Получаем URL страницы
-            url = f"https://telegra.ph/{response['path']}"
-
-            # Обновляем URL README в БД
-            bot.readme_url = url
-            db.commit()
-        except Exception as e:
-            # Логируем ошибку, но продолжаем (README не критичен)
-            print(f"Error creating Telegraph page: {e}")
-
-    db.refresh(bot)
-    return bot
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting README content: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting README content: {str(e)}"
+        )
 
 
 @router.put("/{bot_id}", response_model=BotResponse)
@@ -265,94 +375,112 @@ async def update_bot(
         db: Session = Depends(get_db)
 ):
     """Обновление информации о боте"""
-    # Получаем бота из БД
-    bot = db.query(Bot).filter(Bot.id == bot_id).first()
-    if not bot:
+    try:
+        # Получаем бота из БД
+        bot = db.query(Bot).filter(Bot.id == bot_id).first()
+        if not bot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Bot not found"
+            )
+
+        # Обновляем базовую информацию
+        if name is not None:
+            bot.name = name
+        if description is not None:
+            bot.description = description
+        if price is not None:
+            bot.price = price
+
+        # Проверяем и обновляем категорию
+        if category_id is not None:
+            # Если передано значение > 0, проверяем существование категории
+            if category_id > 0:
+                category = db.query(BotCategory).filter(BotCategory.id == category_id).first()
+                if not category:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Category not found"
+                    )
+                # Если пользователь не указал скидку, а у категории есть скидка, используем её
+                if discount is None and category.discount > 0:
+                    bot.discount = category.discount
+            bot.category_id = category_id if category_id > 0 else None
+
+        # Обновляем скидку, если указана
+        if discount is not None:
+            bot.discount = discount
+
+        if support_group_link is not None:
+            bot.support_group_link = support_group_link
+
+        # Обрабатываем загрузку архива, если предоставлен
+        if archive_file:
+            # Создаем директорию для файлов бота, если она не существует
+            bot_dir = BOT_FILES_DIR / str(bot.id)
+            os.makedirs(bot_dir, exist_ok=True)
+
+            # Удаляем старый архив, если он существует
+            if bot.archive_path:
+                old_archive_path = MEDIA_ROOT / bot.archive_path
+                if os.path.exists(old_archive_path):
+                    os.remove(old_archive_path)
+
+            # Сохраняем новый архив
+            archive_path = bot_dir / f"{archive_file.filename}"
+            with open(archive_path, "wb") as buffer:
+                shutil.copyfileobj(archive_file.file, buffer)
+
+            # Обновляем путь к архиву в БД
+            bot.archive_path = str(archive_path.relative_to(MEDIA_ROOT))
+
+        # Обновляем README в Telegraph, если предоставлен контент
+        if readme_content:
+            try:
+                # Инициализируем клиент Telegraph
+                telegraph_client = telegraph.Telegraph(TELEGRAPH_TOKEN)
+
+                # Если уже есть README, обновляем его
+                if bot.readme_url and '/telegraph/' in bot.readme_url:
+                    # Извлекаем path из URL
+                    path = bot.readme_url.split('/')[-1]
+
+                    # Обновляем страницу
+                    response = telegraph_client.edit_page(
+                        path=path,
+                        title=f"README: {bot.name}",
+                        html_content=readme_content,
+                        author_name="SE1DHE Bot"
+                    )
+                else:
+                    # Создаем новую страницу
+                    response = telegraph_client.create_page(
+                        title=f"README: {bot.name}",
+                        html_content=readme_content,
+                        author_name="SE1DHE Bot"
+                    )
+
+                    # Получаем URL страницы
+                    url = f"https://telegra.ph/{response['path']}"
+
+                    # Обновляем URL README в БД
+                    bot.readme_url = url
+            except Exception as e:
+                # Логируем ошибку, но продолжаем (README не критичен)
+                logger.error(f"Error updating Telegraph page: {e}")
+
+        db.commit()
+        db.refresh(bot)
+        return bot
+    except HTTPException:
+        # Пробрасываем HTTP исключения дальше
+        raise
+    except Exception as e:
+        logger.error(f"Error updating bot: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bot not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating bot: {str(e)}"
         )
-
-    # Обновляем базовую информацию
-    if name is not None:
-        bot.name = name
-    if description is not None:
-        bot.description = description
-    if price is not None:
-        bot.price = price
-    if category_id is not None:
-        # Проверяем существование категории
-        if category_id > 0:
-            category = db.query(BotCategory).filter(BotCategory.id == category_id).first()
-            if not category:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Category not found"
-                )
-        bot.category_id = category_id if category_id > 0 else None
-    if discount is not None:
-        bot.discount = discount
-    if support_group_link is not None:
-        bot.support_group_link = support_group_link
-
-    # Обрабатываем загрузку архива, если предоставлен
-    if archive_file:
-        # Создаем директорию для файлов бота, если она не существует
-        bot_dir = BOT_FILES_DIR / str(bot.id)
-        os.makedirs(bot_dir, exist_ok=True)
-
-        # Удаляем старый архив, если он существует
-        if bot.archive_path:
-            old_archive_path = MEDIA_ROOT / bot.archive_path
-            if os.path.exists(old_archive_path):
-                os.remove(old_archive_path)
-
-        # Сохраняем новый архив
-        archive_path = bot_dir / f"{archive_file.filename}"
-        with open(archive_path, "wb") as buffer:
-            shutil.copyfileobj(archive_file.file, buffer)
-
-        # Обновляем путь к архиву в БД
-        bot.archive_path = str(archive_path.relative_to(MEDIA_ROOT))
-
-    # Обновляем README в Telegraph, если предоставлен контент
-    if readme_content:
-        try:
-            # Инициализируем клиент Telegraph
-            telegraph_client = telegraph.Telegraph(TELEGRAPH_TOKEN)
-
-            # Если уже есть README, обновляем его
-            if bot.readme_url and '/telegraph/' in bot.readme_url:
-                # Извлекаем path из URL
-                path = bot.readme_url.split('/')[-1]
-
-                # Обновляем страницу
-                response = telegraph_client.edit_page(
-                    path=path,
-                    title=f"README: {bot.name}",
-                    html_content=readme_content,
-                    author_name="SE1DHE Bot"
-                )
-            else:
-                # Создаем новую страницу
-                response = telegraph_client.create_page(
-                    title=f"README: {bot.name}",
-                    html_content=readme_content,
-                    author_name="SE1DHE Bot"
-                )
-
-                # Получаем URL страницы
-                url = f"https://telegra.ph/{response['path']}"
-
-                # Обновляем URL README в БД
-                bot.readme_url = url
-        except Exception as e:
-            # Логируем ошибку, но продолжаем (README не критичен)
-            print(f"Error updating Telegraph page: {e}")
-
-    db.commit()
-    db.refresh(bot)
-    return bot
 
 
 @router.delete("/{bot_id}")

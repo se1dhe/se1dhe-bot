@@ -80,3 +80,39 @@ def edit_telegraph_page(path, title, content, author="SE1DHE Bot"):
     except Exception as e:
         logger.error(f"Unexpected error while editing Telegraph page: {e}")
         return False
+
+
+def get_telegraph_content(url: str) -> str:
+    """
+    Получает HTML-содержимое страницы Telegra.ph
+
+    Args:
+        url (str): URL страницы Telegraph
+
+    Returns:
+        str: HTML-содержимое страницы или пустая строка в случае ошибки
+    """
+    try:
+        # Если передан полный URL, извлекаем path
+        if 'telegra.ph/' in url:
+            path = url.split('telegra.ph/')[-1]
+        else:
+            path = url
+
+        # Инициализируем клиент Telegraph
+        telegraph_client = telegraph.Telegraph(TELEGRAPH_TOKEN)
+
+        # Получаем страницу
+        page = telegraph_client.get_page(path)
+
+        # Возвращаем HTML-содержимое
+        if page and 'content' in page:
+            return page['content']
+
+        return ""
+    except telegraph.exceptions.TelegraphException as e:
+        logger.error(f"Telegraph API error while getting content: {e}")
+        return ""
+    except Exception as e:
+        logger.error(f"Unexpected error while getting Telegraph content: {e}")
+        return ""

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Добавление бота - SE1DHE Bot Admin{% endblock %}
+{% block title %}Редактирование бота - SE1DHE Bot Admin{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
@@ -8,7 +8,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mt-4">Добавление бота</h1>
+    <h1 class="mt-4">Редактирование бота: {{ bot.name }}</h1>
     <a href="/bots/page" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Назад к списку
     </a>
@@ -19,12 +19,13 @@
         <h6 class="m-0 font-weight-bold text-primary">Информация о боте</h6>
     </div>
     <div class="card-body">
-        <form id="create-bot-form" class="bot-form" enctype="multipart/form-data">
+        <form id="edit-bot-form" class="bot-form" enctype="multipart/form-data">
+            <input type="hidden" id="bot-id" value="{{ bot.id }}">
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group mb-3">
                         <label for="name">Название бота</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ bot.name }}" required>
                     </div>
 
                     <div class="form-group mb-3">
@@ -32,7 +33,7 @@
                         <select class="form-control" id="category_id" name="category_id">
                             <option value="">Без категории</option>
                             {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            <option value="{{ category.id }}" {% if bot.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
                             {% endfor %}
                         </select>
                         <div id="category-discount-info" class="form-text text-success" style="display: none;"></div>
@@ -44,7 +45,7 @@
                             <div class="form-group mb-3">
                                 <label for="price">Цена</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
+                                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ bot.price }}" required>
                                     <div class="input-group-append">
                                         <span class="input-group-text">₽</span>
                                     </div>
@@ -58,7 +59,7 @@
                             <div class="form-group mb-3">
                                 <label for="discount">Скидка (%)</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" value="0">
+                                    <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" value="{{ bot.discount }}">
                                     <div class="input-group-append">
                                         <span class="input-group-text">%</span>
                                     </div>
@@ -74,7 +75,8 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text">https://t.me/</span>
                             </div>
-                            <input type="text" class="form-control" id="support_group_link" name="support_group_link" placeholder="username">
+                            <input type="text" class="form-control" id="support_group_link" name="support_group_link"
+                                   placeholder="username" value="{{ bot.support_group_link }}">
                         </div>
                         <small class="form-text text-muted">Введите имя пользователя или группы в Telegram</small>
                     </div>
@@ -83,16 +85,27 @@
                         <label for="archive_file">Архив с ботом</label>
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" id="archive_file" name="archive_file" accept=".zip,.rar,.7z">
-                            <label class="custom-file-label" for="archive_file">Выберите файл</label>
+                            <label class="custom-file-label" for="archive_file">
+                                {% if bot.archive_path %}
+                                Выбран файл: {{ bot.archive_path.split('/')[-1] }}
+                                {% else %}
+                                Выберите файл
+                                {% endif %}
+                            </label>
                         </div>
                         <small class="form-text text-muted">Загрузите ZIP-архив с файлами бота</small>
+                        {% if bot.archive_path %}
+                        <div class="mt-1">
+                            <small class="text-success">Загружен архив бота. При загрузке нового файла старый будет заменен.</small>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="form-group mb-3">
                         <label for="description">Описание</label>
-                        <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                        <textarea class="form-control" id="description" name="description" rows="5" required>{{ bot.description }}</textarea>
                         <small class="form-text text-muted">Поддерживается базовый HTML-форматирование</small>
                     </div>
 
@@ -106,7 +119,16 @@
                         <small class="form-text text-muted">Вы можете загрузить несколько изображений (максимум 5)</small>
 
                         <div id="image-preview" class="d-flex flex-wrap mt-2">
-                            <!-- Здесь будут отображаться превью загруженных изображений -->
+                            {% for media in media_files %}
+                            <div class="image-item m-2 position-relative">
+                                <img src="{{ media.url }}" class="img-thumbnail" style="max-height: 100px; max-width: 150px;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute" style="top: 0; right: 0;"
+                                        onclick="deleteMedia({{ media.id }}, this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <input type="hidden" name="existing_media[]" value="{{ media.id }}">
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -114,8 +136,20 @@
 
             <div class="form-group mt-4">
                 <label for="readme_content">README (инструкция)</label>
-                <textarea class="form-control" id="readme_content" name="readme_content" rows="10"></textarea>
+                <textarea class="form-control" id="readme_content" name="readme_content" rows="10">
+                    {% if bot.readme_url %}
+                    <!-- Здесь должен быть контент README, который нужно загрузить отдельно -->
+                    <!-- В реальном приложении сюда можно подставить HTML-контент, полученный от Telegraph API -->
+                    {% endif %}
+                </textarea>
                 <small class="form-text text-muted">HTML-разметка для инструкции. Будет опубликована на Telegra.ph</small>
+                {% if bot.readme_url %}
+                <div class="mt-1">
+                    <a href="{{ bot.readme_url }}" target="_blank" class="text-success">
+                        <i class="fas fa-external-link-alt"></i> Просмотреть текущий README
+                    </a>
+                </div>
+                {% endif %}
             </div>
 
             <hr>
@@ -134,7 +168,7 @@
     </div>
 </div>
 
-<!-- Модальное окно предпросмотра -->
+<!-- Модальное окно предпросмотра (такое же, как в create.html) -->
 <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -199,4 +233,36 @@
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ru-RU.min.js"></script>
 <script src="{{ url_for('static', path='/js/bot-edit.js') }}"></script>
+<script>
+// Функция для удаления медиафайла
+function deleteMedia(mediaId, element) {
+    if (confirm('Вы уверены, что хотите удалить это изображение?')) {
+        $.ajax({
+            url: '/bots/{{ bot.id }}/media/' + mediaId,
+            type: 'DELETE',
+            success: function() {
+                $(element).parent().remove();
+                showAlert('Изображение успешно удалено', 'success');
+            },
+            error: function(error) {
+                showAlert('Ошибка при удалении изображения: ' + error.responseJSON?.detail || 'Неизвестная ошибка', 'danger');
+            }
+        });
+    }
+}
+
+// Загрузка содержимого README при загрузке страницы
+$(document).ready(function() {
+    {% if bot.readme_url %}
+    // В идеале тут должен быть запрос к API для получения содержимого README
+    // Но поскольку Telegraph API не имеет прямого метода для этого, здесь могла бы быть
+    // реализация парсинга страницы через серверный эндпоинт
+
+    // Пример:
+    // $.get('/bots/{{ bot.id }}/readme-content', function(content) {
+    //     $('#readme_content').summernote('code', content);
+    // });
+    {% endif %}
+});
+</script>
 {% endblock %}
