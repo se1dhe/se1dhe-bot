@@ -45,6 +45,6 @@ def get_db():
         if db:
             try:
                 db.close()
-                logger.debug("Database connection closed successfully")
             except Exception as close_error:
                 logger.error(f"Error closing database connection: {close_error}")
+        Session.remove()  # Важно! Освобождаем сессию из текущего потока

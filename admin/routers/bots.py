@@ -7,6 +7,7 @@ import os
 import shutil
 from typing import List, Optional, Dict
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from admin.utils import serialize_model, validate_file
@@ -148,8 +149,14 @@ async def get_bots(db: Session = Depends(get_db)):
 @router.get("/count")
 async def get_bots_count(db: Session = Depends(get_db)):
     """Получение количества ботов"""
-    count = db.query(Bot).count()
-    return {"count": count}
+    try:
+        # Используем более безопасный способ подсчета строк
+        count = db.query(func.count(Bot.id)).scalar() or 0
+        return {"count": count}
+    except Exception as e:
+        logger.error(f"Error while counting bots: {e}")
+        # Возвращаем нулевое значение в случае ошибки вместо исключения
+        return {"count": 0}
 
 
 @router.get("/{bot_id}", response_model=BotResponse)
