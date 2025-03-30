@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from admin.utils import serialize_model
 from models.models import BugReport, BugReportMedia, User, Bot
-from database.db import get_db, logger
+from database.db import get_db, logger, execute_with_retry
 from sqlalchemy import desc, func
 
 router = APIRouter()
@@ -45,25 +45,34 @@ async def get_reports_count(db: Session = Depends(get_db)):
 @router.get("/latest")
 async def get_latest_reports(limit: int = 5, db: Session = Depends(get_db)):
     """Получение последних баг-репортов"""
-    reports = db.query(BugReport).order_by(desc(BugReport.created_at)).limit(limit).all()
+    try:
+        # Обертываем запрос в функцию retry
+        def get_reports():
+            return db.query(BugReport).order_by(desc(BugReport.created_at)).limit(limit).all()
 
-    return [
-        {
-            "id": report.id,
-            "user": {
-                "id": report.user.id,
-                "username": report.user.username,
-                "first_name": report.user.first_name
-            },
-            "bot": {
-                "id": report.bot.id,
-                "name": report.bot.name
-            },
-            "status": report.status,
-            "created_at": report.created_at.isoformat()
-        }
-        for report in reports
-    ]
+        reports = execute_with_retry(get_reports)
+
+        return [
+            {
+                "id": report.id,
+                "user": {
+                    "id": report.user.id,
+                    "username": report.user.username,
+                    "first_name": report.user.first_name
+                },
+                "bot": {
+                    "id": report.bot.id,
+                    "name": report.bot.name
+                },
+                "status": report.status,
+                "created_at": report.created_at.isoformat()
+            }
+            for report in reports
+        ]
+    except Exception as e:
+        logger.error(f"Error while getting latest reports: {e}")
+        # Возвращаем пустой список в случае ошибки
+        return []
 
 
 @router.get("/{report_id}", response_model=BugReportResponse)

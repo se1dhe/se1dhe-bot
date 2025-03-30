@@ -28,12 +28,22 @@ function setupAjaxAuth() {
                 xhr.setRequestHeader('Authorization', 'Bearer ' + token);
             },
             error: function(xhr, status, error) {
-                if (xhr.status === 401) {
-                    console.log('Authentication error in API request');
-                    showAlert('Ошибка аутентификации при запросе к API. Попробуйте перезайти.', 'danger');
+                if (xhr.status === 401 || xhr.status === 403) {
+                    console.log('Authentication error in API request: ' + status);
+                    // Если возникла ошибка авторизации, перенаправляем на страницу входа
+                    if (!window.location.pathname.startsWith('/auth') && window.location.pathname !== '/') {
+                        showAlert('Ошибка аутентификации. Выполняется перенаправление на страницу входа...', 'danger');
+                        setTimeout(function() {
+                            localStorage.removeItem('token');
+                            window.location.href = '/';
+                        }, 2000);
+                    }
                 }
             }
         });
+    } else if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/auth')) {
+        // Если нет токена и мы не на странице авторизации, перенаправляем на страницу входа
+        window.location.href = '/';
     }
 }
 

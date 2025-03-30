@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from admin.utils import serialize_model
 from models.models import Order, User, Bot, OrderStatus
-from database.db import get_db
+from database.db import get_db, execute_with_retry, logger
 from sqlalchemy import func, desc
 
 router = APIRouter()
@@ -70,26 +70,35 @@ async def get_payment_stats(db: Session = Depends(get_db)):
 @router.get("/latest")
 async def get_latest_orders(limit: int = 5, db: Session = Depends(get_db)):
     """Получение последних заказов"""
-    orders = db.query(Order).order_by(desc(Order.created_at)).limit(limit).all()
+    try:
+        # Обертываем запрос в функцию retry
+        def get_orders():
+            return db.query(Order).order_by(desc(Order.created_at)).limit(limit).all()
 
-    return [
-        {
-            "id": order.id,
-            "user": {
-                "id": order.user.id,
-                "username": order.user.username,
-                "first_name": order.user.first_name
-            },
-            "bot": {
-                "id": order.bot.id,
-                "name": order.bot.name
-            },
-            "amount": order.amount,
-            "status": order.status.value,
-            "created_at": order.created_at.isoformat()
-        }
-        for order in orders
-    ]
+        orders = execute_with_retry(get_orders)
+
+        return [
+            {
+                "id": order.id,
+                "user": {
+                    "id": order.user.id,
+                    "username": order.user.username,
+                    "first_name": order.user.first_name
+                },
+                "bot": {
+                    "id": order.bot.id,
+                    "name": order.bot.name
+                },
+                "amount": order.amount,
+                "status": order.status.value,
+                "created_at": order.created_at.isoformat()
+            }
+            for order in orders
+        ]
+    except Exception as e:
+        logger.error(f"Error while getting latest orders: {e}")
+        # Возвращаем пустой список в случае ошибки
+        return []
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

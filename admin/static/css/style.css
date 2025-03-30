@@ -644,3 +644,50 @@ body.dark-mode .preview-container {
     max-height: 150px;
     margin: 10px 0;
 }
+
+/* Стили для уведомлений */
+.notification-dropdown {
+    max-width: 400px;
+}
+
+.notification-item {
+    white-space: normal;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: rgba(78, 115, 223, 0.05);
+}
+
+.icon-circle {
+    height: 40px;
+    width: 40px;
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Стили для темного режима */
+body.dark-mode .notification-dropdown {
+    background-color: #1e2635;
+    color: #e0e0e0;
+    border-color: #384152;
+}
+
+body.dark-mode .notification-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .notification-item:hover {
+    background-color: #263144;
+}
+
+body.dark-mode .dropdown-divider {
+    border-color: #384152;
+}
+
+body.dark-mode .dropdown-header {
+    color: #a0a0a0;
+    border-color: #384152;
+}

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from admin.utils import serialize_model, validate_file
 from models.models import Bot, BotCategory, BotMedia
-from database.db import get_db
+from database.db import get_db, execute_with_retry
 from config.settings import BOT_FILES_DIR, MEDIA_ROOT
 import telegraph
 from config.settings import TELEGRAPH_TOKEN
@@ -150,12 +150,15 @@ async def get_bots(db: Session = Depends(get_db)):
 async def get_bots_count(db: Session = Depends(get_db)):
     """Получение количества ботов"""
     try:
-        # Используем более безопасный способ подсчета строк
-        count = db.query(func.count(Bot.id)).scalar() or 0
+        # Обертываем запрос в функцию retry
+        def count_bots():
+            return db.query(func.count(Bot.id)).scalar() or 0
+
+        count = execute_with_retry(count_bots)
         return {"count": count}
     except Exception as e:
         logger.error(f"Error while counting bots: {e}")
-        # Возвращаем нулевое значение в случае ошибки вместо исключения
+        # Возвращаем нулевое значение в случае ошибки
         return {"count": 0}
 
 

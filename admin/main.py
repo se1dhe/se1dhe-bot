@@ -12,6 +12,7 @@ from pathlib import Path
 from database.db import Session as DbSession, get_db, Session
 from models.models import User, Bot, BotCategory, BotMedia, BugReport, Order
 from admin.routers import messages
+from admin.routers import notifications
 import logging
 
 # Настроим логирование
@@ -355,7 +356,7 @@ api_routes = [
     (reports.router, "/reports", "reports"),
     (changelogs.router, "/changelogs", "changelogs"),
     (messages.router, "/messages", "messages"),
-
+    (notifications.router, "/notifications", "notifications"),  # Добавлено
 ]
 
 for router, prefix, tag in api_routes:

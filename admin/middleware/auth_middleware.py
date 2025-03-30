@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional
 from config.settings import SECRET_KEY, ADMIN_IDS
-from database.db import Session, get_db
+from database.db import Session, get_db, db_session
 from models.models import User
 import logging
 
@@ -65,45 +65,47 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         telegram_id = payload.get("telegram_id")
 
         if username is None or telegram_id is None:
+            logger.warning(f"Invalid token, missing username or telegram_id: {payload}")
             raise credentials_exception
 
         token_data = TokenData(username=username, telegram_id=telegram_id)
 
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT error: {e}")
         raise credentials_exception
 
     # Проверяем, является ли пользователь администратором
     if int(token_data.telegram_id) not in ADMIN_IDS:
+        logger.warning(f"Authentication attempt with non-admin telegram_id: {token_data.telegram_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this resource"
         )
 
-    # Создаем отдельную сессию для каждого запроса
-    db = None
-    try:
-        db = Session()
-        user = db.query(User).filter(User.telegram_id == token_data.telegram_id).first()
-        if user is None:
+    # Используем контекстный менеджер для работы с базой данных
+    with db_session() as db:
+        try:
+            user = db.query(User).filter(User.telegram_id == token_data.telegram_id).first()
+            if user is None:
+                logger.warning(f"User with telegram_id {token_data.telegram_id} not found in database")
+                raise credentials_exception
+
+            # Важно: создаем копию пользователя, чтобы избежать ошибок сессии
+            user_copy = User(
+                id=user.id,
+                telegram_id=user.telegram_id,
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                language=user.language,
+                created_at=user.created_at,
+                updated_at=user.updated_at
+            )
+            return user_copy
+        except Exception as e:
+            logger.error(f"Error during token verification: {e}")
+            # При любой ошибке поднимаем credentials_exception
             raise credentials_exception
-        # Важно: создаем копию пользователя, чтобы избежать ошибок сессии
-        user_copy = User(
-            id=user.id,
-            telegram_id=user.telegram_id,
-            username=user.username,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            language=user.language,
-            created_at=user.created_at,
-            updated_at=user.updated_at
-        )
-        return user_copy
-    except Exception:
-        # При любой ошибке поднимаем credentials_exception
-        raise credentials_exception
-    finally:
-        if db:
-            db.close()
 
 
 async def get_token_from_request(request: Request) -> Optional[str]:
